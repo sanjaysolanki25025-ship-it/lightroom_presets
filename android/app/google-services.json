@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "941090278930",
+    "project_id": "lightroompresents-f19e0",
+    "storage_bucket": "lightroompresents-f19e0.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:941090278930:android:6a1d0fdd3b78accbc892cb",
+        "android_client_info": {
+          "package_name": "com.lumio.lrpresets"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCJTtKAsYuNNPacqyy965P3GDoIXWZXP7M"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

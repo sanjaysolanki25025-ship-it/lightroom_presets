@@ -1,0 +1,102 @@
+name: lightroom_template
+description: "A new Flutter project."
+publish_to: 'none'
+
+version: 1.0.3+4
+
+environment:
+  sdk: ^3.11.4
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.9
+  google_fonts: ^8.1.0
+  flutter_screenutil: ^5.9.3
+  url_launcher: ^6.3.2
+  flutter_bloc: ^9.1.1
+  firebase_remote_config: ^6.5.2
+  shared_preferences: ^2.5.5
+  purchases_flutter: ^10.0.1
+  google_mobile_ads: ^8.0.0
+  shimmer: ^3.0.0
+  auto_size_text: ^3.0.0
+  go_router: ^17.2.3
+  clarity_flutter: ^1.9.0
+  firebase_messaging: ^16.3.0
+  firebase_core: ^4.10.0
+  firebase_crashlytics: ^5.2.3
+  firebase_storage: ^13.4.2
+  facebook_app_events: ^0.28.0
+  flutter_local_notifications: ^21.0.0
+  lottie: ^3.3.3
+  dio: ^5.9.2
+  path_provider: ^2.1.5
+  path: ^1.9.1
+  logger: ^2.7.0
+  fpdart: ^1.2.0
+  image: ^4.8.0
+  http: ^1.6.0
+  cached_network_image: ^3.4.1
+  device_info_plus: ^13.1.0
+#  permission_handler: ^12.0.3
+  external_app_launcher: ^4.0.3
+  flame: ^1.37.0
+  connectivity_plus: ^7.1.1
+  hive: ^2.2.3
+  flame_audio: ^2.12.1
+  cloud_firestore: ^6.5.0
+  flutter_rating_bar: ^4.0.1
+  share_plus: ^13.1.0
+  image_picker: ^1.2.2
+  flutter_svg: ^2.3.0
+  gal: ^2.3.2
+  in_app_update: ^4.2.5
+  gma_mediation_unity: ^1.7.0 #for unity ad
+  gma_mediation_liftoffmonetize: ^1.5.0 # liftoff monetize
+  gma_mediation_inmobi: ^2.1.0 #for inmobi mediation
+  gma_mediation_pangle: ^3.6.0 #for pangle mediation
+  gma_mediation_meta: ^1.5.2 #for meta mediation
+  gma_mediation_ironsource: ^2.4.0 #for ironsource mediation
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  hive_generator: ^2.0.1
+  build_runner: ^2.4.13
+  flutter_native_splash: ^2.4.8
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/icons/
+    - assets/images/
+    - assets/lotties/
+    - assets/game/audio/
+    - assets/game/images/
+    - assets/game/images/AngryPig/
+    - assets/game/images/Bat/
+    - assets/game/images/Rino/
+    - assets/game/images/parallax/
+    - assets/game/fonts/Audiowide/
+
+  fonts:
+    - family: Audiowide
+      fonts:
+        - asset: assets/game/fonts/Audiowide/Audiowide-Regular.ttf
+
+flutter_native_splash:
+  color: "#101010"
+
+  image: assets/images/img_app_logo.png
+
+  fullscreen: true
+
+  android: true
+  ios: true
+
+  android_12:
+    color: "#101010"
+    image: assets/images/img_app_logo.png
