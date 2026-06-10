@@ -18,21 +18,24 @@ class FullScreenNativeAdBloc extends Bloc<FullScreenNativeAdEvent, FullScreenNat
     log('FullScreenNativeAdBloc: LoadFullScreenNativeAdEvent received');
     if (state.nativeAd != null || state.isLoading) return;
 
-    final cachedAd = NativeAdManager().getFullScreenNativeAd();
+    final targetAdId = event.adId ?? AppAdIdString.homeReelsNativeAd;
+
+    final cachedAd = NativeAdManager().getFullScreenNativeAd(adId: targetAdId);
     if (cachedAd != null) {
       log('✅ FullScreenNativeAdBloc: Using cached ad.');
       emit(state.copyWith(
         nativeAd: cachedAd,
         isShowNative: true,
+        adId: targetAdId,
       ));
       return;
     }
 
-    log('⚠️ FullScreenNativeAdBloc: No cached ad found. Loading manually...');
-    emit(state.copyWith(isLoading: true));
+    log('⚠️ FullScreenNativeAdBloc: No cached ad found. Loading manually for $targetAdId...');
+    emit(state.copyWith(isLoading: true, adId: targetAdId));
 
     NativeAd(
-      adUnitId: AppAdIdString.homeReelsNativeAd,
+      adUnitId: targetAdId,
       factoryId: 'full_screen_native_ad',
       request: const AdRequest(),
       nativeAdOptions: NativeAdOptions(
@@ -73,10 +76,12 @@ class FullScreenNativeAdBloc extends Bloc<FullScreenNativeAdEvent, FullScreenNat
     // Force pre-caching to retry in NativeAdManager
     NativeAdManager().init();
 
+    final targetAdId = state.adId.isNotEmpty ? state.adId : AppAdIdString.homeReelsNativeAd;
+
     // Fire another load request after 3 seconds to try to load it again
     Future.delayed(const Duration(seconds: 3), () {
       if (!isClosed) {
-        add(LoadFullScreenNativeAdEvent());
+        add(LoadFullScreenNativeAdEvent(adId: targetAdId));
       }
     });
   }

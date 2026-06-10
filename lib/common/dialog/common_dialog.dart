@@ -73,31 +73,66 @@ class CommonDialog {
   }
 
   /// loader dialog
-  static Future<void> loaderDialog({required BuildContext context}) {
+  static Future<void> loaderDialog({required BuildContext context, bool isSmall = false}) {
     return showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) {
         return PopScope(
           canPop: false,
-          child: Dialog(
-            backgroundColor: AppColors.surfaceContainerHighest,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            child: Padding(
-              padding: EdgeInsets.all(16.w),
-              child: Row(
-                children: [
-                  SBW5(),
-                  CommonLoader(),
-                  SBW20(),
-                  CommonTextWidget(
-                    text: AppStrings.txtPleaseWait,
-                    textStyle: size12TextStyle(textColor: AppColors.whiteColor),
+          child: isSmall
+              ? Center(
+                  child: Material(
+                    color: AppColors.surfaceContainerHighest,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    type: MaterialType.card,
+                    child: SizedBox(
+                      width: 250,
+                      height: 70,
+                      child: Padding(
+                        padding: const EdgeInsets.all(10),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const CommonLoader(
+                              size: 18,
+                              strokeWidth: 2,
+                            ),
+                            const SizedBox(width: 12),
+                            CommonTextWidget(
+                              text: AppStrings.txtPleaseWait,
+                              textStyle: size12TextStyle(textColor: AppColors.whiteColor),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
-                ],
-              ),
-            ),
-          ),
+                )
+              : Dialog(
+                  backgroundColor: AppColors.surfaceContainerHighest,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  child: Padding(
+                    padding: EdgeInsets.all(16.w),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const SBW5(),
+                        const CommonLoader(
+                          size: 30,
+                          strokeWidth: 3,
+                        ),
+                        const SBW20(),
+                        CommonTextWidget(
+                          text: AppStrings.txtPleaseWait,
+                          textStyle: size12TextStyle(textColor: AppColors.whiteColor),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
         );
       },
     );

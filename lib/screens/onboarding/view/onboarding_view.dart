@@ -16,6 +16,8 @@ import 'package:lightroom_template/data/models/onboarding_model.dart';
 import 'package:lightroom_template/routes/app_route_string.dart';
 import 'package:lightroom_template/common/common_button.dart';
 import 'package:lightroom_template/screens/onboarding/bloc/onboarding_bloc.dart';
+import 'package:lightroom_template/common/ad_widgets/full_screen_native_ad/view/full_screen_native_ad_view.dart';
+import 'package:lightroom_template/core/constant/app_ad_id_string.dart';
 
 class OnboardingView extends StatefulWidget {
   const OnboardingView({super.key});
@@ -53,75 +55,110 @@ class _OnboardingViewState extends State<OnboardingView> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: BlocListener<OnboardingBloc, OnboardingState>(
-        listener: (context, state) {
-          if (state.status == OnboardingStatus.loaded) {
-            AdHelper.showAppOpenAd(
-              onComplete: () {
-                context.go(AppRoutesString.dashboardView);
-              },
-            );
-            // bool adLoaded = AdHelper.isAppOpenAdLoaded;
-            // if (!adLoaded) {
-            //   CommonDialog.loaderDialog(context: context);
-            // }
-            //
-            // AdHelper.showAppOpenAd(
-            //   onComplete: () {
-            //     if (!adLoaded) {
-            //       Navigator.of(context, rootNavigator: true).pop();
-            //     }
-            //   },
-            //   onComplete: () {
-            //     context.go(AppRoutesString.dashboardView);
-            //   },
-            // );
-          }
-        },
-        child: BlocBuilder<OnboardingBloc, OnboardingState>(
-          builder: (context, state) {
-            return Stack(
-              children: [
-                Positioned.fill(
-                  child: PageView.builder(
-                    controller: _pageController,
-                    physics: const NeverScrollableScrollPhysics(),
-                    onPageChanged: (index) {
-                      context.read<OnboardingBloc>().add(NextButtonOnTapEvent(index: index));
-                    },
-                    itemCount: _onboardingData.length,
-                    itemBuilder: (context, index) {
-                      return _buildPageContent(data: _onboardingData[index]);
-                    },
+    return SafeArea(
+      child: Scaffold(
+        body: BlocListener<OnboardingBloc, OnboardingState>(
+          listener: (context, state) {
+            if (state.status == OnboardingStatus.loaded) {
+              AdHelper.showAppOpenAd(
+                onComplete: () {
+                  context.go(AppRoutesString.dashboardView);
+                },
+              );
+              // bool adLoaded = AdHelper.isAppOpenAdLoaded;
+              // if (!adLoaded) {
+              //   CommonDialog.loaderDialog(context: context);
+              // }
+              //
+              // AdHelper.showAppOpenAd(
+              //   onComplete: () {
+              //     if (!adLoaded) {
+              //       Navigator.of(context, rootNavigator: true).pop();
+              //     }
+              //   },
+              //   onComplete: () {
+              //     context.go(AppRoutesString.dashboardView);
+              //   },
+              // );
+            }
+          },
+          child: BlocBuilder<OnboardingBloc, OnboardingState>(
+            builder: (context, state) {
+              return Stack(
+                children: [
+                  Positioned.fill(
+                    child: PageView.builder(
+                      controller: _pageController,
+                      physics: const NeverScrollableScrollPhysics(),
+                      onPageChanged: (index) {
+                        context.read<OnboardingBloc>().add(NextButtonOnTapEvent(index: index));
+                      },
+                      itemCount: _onboardingData.length + 1,
+                      itemBuilder: (context, index) {
+                        if (index == 2) {
+                          return FullScreenNativeAdView(
+                            key: const ValueKey('onboarding_ad'),
+                            adId: AppAdIdString.onBoardingFullScreenAd,
+                          );
+                        }
+                        final dataIndex = index > 2 ? index - 1 : index;
+                        return _buildPageContent(data: _onboardingData[dataIndex]);
+                      },
+                    ),
                   ),
-                ),
-                state.showButtons ?? false
-                    ? Positioned(
-                        bottom: 20,
-                        left: 24,
-                        right: 24,
-                        child: _buildControls(currentIndex: state.selectedIndex ?? 0),
-                      )
-                    : Positioned(
-                        bottom: 20,
-                        left: 24,
-                        right: 24,
-                        child: CommonLottieAsset(
-                          assetName: AppLottiesString.loadingAnimation,
-                          height: 70,
-                          width: 70,
+                  if (state.selectedIndex == 2 && (state.showButtons ?? false))
+                    Positioned(
+                      top: MediaQuery.of(context).padding.top + 16,
+                      right: 20,
+                      child: GestureDetector(
+                        onTap: () {
+                          _pageController.nextPage(
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOut,
+                          );
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: const BoxDecoration(
+                            color: Colors.black54,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.close,
+                            color: Colors.white,
+                            size: 24,
+                          ),
                         ),
                       ),
-              ],
-            );
+                    ),
+                  if (state.selectedIndex != 2)
+                    state.showButtons ?? false
+                        ? Positioned(
+                            bottom: 20,
+                            left: 24,
+                            right: 24,
+                            child: _buildControls(currentIndex: state.selectedIndex ?? 0),
+                          )
+                        : Positioned(
+                            bottom: 20,
+                            left: 24,
+                            right: 24,
+                            child: CommonLottieAsset(
+                              assetName: AppLottiesString.loadingAnimation,
+                              height: 70,
+                              width: 70,
+                            ),
+                          ),
+                ],
+              );
+            },
+          ),
+        ),
+        bottomNavigationBar: BlocBuilder<OnboardingBloc, OnboardingState>(
+          builder: (context, state) {
+            return NativeAdOnboardingWidget(index: state.selectedIndex ?? 0);
           },
         ),
-      ),
-      bottomNavigationBar: BlocBuilder<OnboardingBloc, OnboardingState>(
-        builder: (context, state) {
-          return NativeAdOnboardingWidget(index: state.selectedIndex ?? 0);
-        },
       ),
     );
   }
@@ -174,6 +211,11 @@ class _OnboardingViewState extends State<OnboardingView> {
   }
 
   Widget _buildControls({required int currentIndex}) {
+    int activeDotIndex = currentIndex;
+    if (currentIndex == 3) {
+      activeDotIndex = 2;
+    }
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -183,9 +225,9 @@ class _OnboardingViewState extends State<OnboardingView> {
             (index) => Container(
               margin: const EdgeInsets.only(right: 8),
               height: 4,
-              width: currentIndex == index ? 24 : 12,
+              width: activeDotIndex == index ? 24 : 12,
               decoration: BoxDecoration(
-                color: currentIndex == index ? AppColors.primary : AppColors.outlineVariant,
+                color: activeDotIndex == index ? AppColors.primary : AppColors.outlineVariant,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -194,16 +236,16 @@ class _OnboardingViewState extends State<OnboardingView> {
 
         // Next / Get Started Button
         CommonButton(
-          text: currentIndex == _onboardingData.length - 1 ? AppStrings.txtGetStarted : AppStrings.txtNext,
+          text: currentIndex == 3 ? AppStrings.txtGetStarted : AppStrings.txtNext,
           onTap: () {
-            if (currentIndex == _onboardingData.length - 1) {
+            if (currentIndex == 3) {
               context.read<OnboardingBloc>().add(SaveOnTapEvent());
             } else {
               _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
             }
           },
           borderRadius: 100,
-          icon: currentIndex != _onboardingData.length - 1
+          icon: currentIndex != 3
               ? const Icon(Icons.arrow_forward_rounded, color: AppColors.whiteColor, size: 20)
               : null,
           textStyle: size16TextStyle(textColor: AppColors.whiteColor, fontWeight: FontWeight.w600),

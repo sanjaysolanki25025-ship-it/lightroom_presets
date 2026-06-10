@@ -28,7 +28,9 @@ class _NativeAdOnboardingWidgetState extends State<NativeAdOnboardingWidget> {
   @override
   void initState() {
     super.initState();
-    _loadAd();
+    if (widget.index != 2) {
+      _loadAd();
+    }
   }
 
   static final List<String> onboardingNativeAds = [
@@ -44,13 +46,21 @@ class _NativeAdOnboardingWidgetState extends State<NativeAdOnboardingWidget> {
       _nativeAd?.dispose();
       _nativeAd = null;
       context.read<NativeAdOnboardingBloc>().add(ShowNativeAdOnboardingEvent(isShowNative: false));
-      _loadAd();
+      if (widget.index != 2) {
+        _loadAd();
+      }
     }
   }
 
   void _loadAd() {
-    final adId = onboardingNativeAds[widget.index];
-    log('🔍 NativeAdOnboardingWidget [index: ${widget.index}]: Requesting ad... (adId: $adId)');
+    int adIndex = widget.index;
+    if (widget.index == 3) {
+      adIndex = 2;
+    }
+    if (adIndex >= onboardingNativeAds.length) return;
+
+    final adId = onboardingNativeAds[adIndex];
+    log('🔍 NativeAdOnboardingWidget [index: ${widget.index}, adIndex: $adIndex]: Requesting ad... (adId: $adId)');
     _nativeAd = NativeAdManager().getAd(adId);
 
     if (_nativeAd != null) {
@@ -85,6 +95,9 @@ class _NativeAdOnboardingWidgetState extends State<NativeAdOnboardingWidget> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.index == 2) {
+      return const SizedBox.shrink();
+    }
     return BlocBuilder<NativeAdOnboardingBloc, NativeAdOnboardingState>(
       builder: (context, state) {
         if (!state.isShowNative || _nativeAd == null) {

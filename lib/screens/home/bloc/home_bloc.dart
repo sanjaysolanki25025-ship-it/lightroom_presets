@@ -48,6 +48,11 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     on<LikeReelEvent>(_likeReelEvent);
     on<RemoveLikeEvent>(_removeLikeEvent);
     on<MarkTemplateNotFavouriteEvent>(_markTemplateNotFavouriteEvent);
+    on<HomeViewIndexChanged>(_onHomeViewIndexChanged);
+  }
+
+  void _onHomeViewIndexChanged(HomeViewIndexChanged event, Emitter<HomeState> emit) {
+    emit(state.copyWith(currentViewIndex: event.index));
   }
 
   DocumentSnapshot? _lastPresentDoc;
@@ -81,7 +86,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     }
 
     final result = await _repository.fetchPresentWithPagination(
-      limit: 2,
+      limit: 6,
       lastDoc: _lastPresentDoc,
       randomStart: _randomStart,
     );
@@ -93,7 +98,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
           (presents) async {
         _lastPresentDoc = presents.lastDoc;
         _presentHasMore = presents.hasMore;
-        _hasMore = (presents.presents.length >= 2) || _presentHasMore;
+        _hasMore = (presents.presents.length >= 6) || _presentHasMore;
 
         // ✅ Separate awaits — avoids List<dynamic> cast error from Future.wait
         final categoryResult = await appRepository.fetchCategory();
@@ -119,7 +124,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         }).toList();
 
         updatePresents.shuffle();
-        _precacheImages(updatePresents);
+        // _precacheImages(updatePresents);
         emit(
           state.copyWith(
             status: HomeStatus.success,
@@ -149,7 +154,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     final isAll = currentCategory == 'All';
 
     final result = await _repository.fetchPresentWithPagination(
-      limit: 2,
+      limit: 6,
       lastDoc: _lastPresentDoc,
       category: isAll ? null : currentCategory,
     );
@@ -174,7 +179,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         }).toList();
 
         final updatedList = [...state.entries, ...newPresents];
-         _precacheImages(newPresents);
+         // _precacheImages(newPresents);
 
         emit(state.copyWith(status: HomeStatus.initial, entries: updatedList, hasMore: _hasMore));
 
@@ -207,7 +212,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     );
 
     final result = await _repository.fetchPresentWithPagination(
-      limit: 2,
+      limit: 6,
       category: isAll ? null : event.category,
     );
 
@@ -234,7 +239,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         }).toList();
 
         updatePresents.shuffle();
-        _precacheImages(updatePresents);
+        // _precacheImages(updatePresents);
         emit(
           state.copyWith(
             status: HomeStatus.success,

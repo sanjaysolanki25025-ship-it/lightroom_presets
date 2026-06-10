@@ -85,17 +85,27 @@ class GameOverMenu extends StatelessWidget {
 
 
                       onPressed: () {
-                        CommonDialog.loaderDialog(context: context);
-                        AdHelper.showInterstitialAd(
-                          adUnitId: AppAdIdString.restartDinoInterstitialAd,
+                        CommonDialog.loaderDialog(context: context, isSmall: true);
+
+                        void restartGame() {
+                          game.reset();
+                          game.startGamePlay();
+                          game.overlays.remove(GameOverMenu.id);
+                          game.overlays.add(Hud.id);
+                          game.resumeEngine();
+                          AudioManager.instance.resumeBgm();
+                        }
+
+                        AdHelper.showRewardedAd(
+                          adUnitId: AppAdIdString.dinoGameRestart,
+                          onRewardEarned: () {},
+                          onAdFailed: () {
+                            CommonDialog.closeDialog(context: context);
+                            restartGame();
+                          },
                           onComplete: () {
                             CommonDialog.closeDialog(context: context);
-                            game.reset();
-                            game.startGamePlay();
-                            game.overlays.remove(GameOverMenu.id);
-                            game.overlays.add(Hud.id);
-                            game.resumeEngine();
-                            AudioManager.instance.resumeBgm();
+                            restartGame();
                           },
                         );
                       },

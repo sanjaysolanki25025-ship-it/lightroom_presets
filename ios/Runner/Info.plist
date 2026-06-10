@@ -74,5 +74,9 @@
 		<string>We need permission to save Lightroom presets to your photo library.</string>
 		<key>NSPhotoLibraryUsageDescription</key>
 		<string>We need permission to save Lightroom presets to your photo library.</string>
+		<key>UIFileSharingEnabled</key>
+		<true/>
+		<key>LSSupportsOpeningDocumentsInPlace</key>
+		<true/>
 	</dict>
 </plist>

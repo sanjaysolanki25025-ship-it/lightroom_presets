@@ -47,6 +47,8 @@ class DinoRun extends FlameGame with TapCallbacks, HasCollisionDetection {
     /// Read [PlayerData] and [Settings] from hive.
     playerData = await _readPlayerData();
     settings = await _readSettings();
+    // playerData.resetScore();
+    // playerData.lives = 1;
 
     /// Initilize [AudioManager].
     FlameAudio.audioCache.prefix = DinoGameAssets.audioPrefix;

@@ -30,6 +30,7 @@ class AppPreferences {
   static const String joinTelegram = "join_telegram";
   static const String subscriptionPlan = "subscription_plan";
   static const String planType = "plan_type";
+  static const String categoryTap = "category_tap";
   static const String openAppCount = "open_app_count";
 
   // Initialize SharedPreferences

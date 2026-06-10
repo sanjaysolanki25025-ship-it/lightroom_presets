@@ -70,15 +70,15 @@ Future<void> main() async {
   // );
   // await Purchases.configure(configuration);
   // PaintingBinding.instance.imageCache.maximumSizeBytes = 50 << 20;
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.black,
-      statusBarIconBrightness: Brightness.light,
-      statusBarBrightness: Brightness.dark,
-      systemNavigationBarColor: Colors.black,
-      systemNavigationBarIconBrightness: Brightness.light,
-    ),
-  );
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+
+  // SystemChrome.setSystemUIOverlayStyle(
+  //   const SystemUiOverlayStyle(
+  //     statusBarColor: Colors.transparent,
+  //     statusBarIconBrightness: Brightness.light, // White Android icons
+  //     statusBarBrightness: Brightness.dark, // White iOS icons
+  //   ),
+  // );
   await initHive();
   runApp(ClarityWidget(app: const MyApp(), clarityConfig: config));
 }
@@ -121,30 +121,33 @@ class MyApp extends StatelessWidget {
         theme: ThemeData(
           scaffoldBackgroundColor: AppColors.backgroundColor,
           useMaterial3: true,
-          appBarTheme: const AppBarTheme(
-            systemOverlayStyle: SystemUiOverlayStyle(
-              statusBarColor: Colors.transparent,
-              statusBarIconBrightness: Brightness.light,
-              statusBarBrightness: Brightness.dark,
-            ),
-          ),
+          // appBarTheme: const AppBarTheme(systemOverlayStyle: SystemUiOverlayStyle.light),
+          // appBarTheme: const AppBarTheme(systemOverlayStyle: SystemUiOverlayStyle.dark),
+          // appBarTheme: const AppBarTheme(
+          //   systemOverlayStyle: SystemUiOverlayStyle(
+          //     statusBarColor: Colors.transparent,
+          //     statusBarIconBrightness: Brightness.light,
+          //     statusBarBrightness: Brightness.dark,
+          //   ),
+          // ),
         ),
-        builder: (context, child) {
-          // ✅ AnnotatedRegion here — closest to the actual UI
-          return AnnotatedRegion<SystemUiOverlayStyle>(
-            value: const SystemUiOverlayStyle(
-              statusBarColor: Colors.transparent,
-              statusBarIconBrightness: Brightness.light,
-              statusBarBrightness: Brightness.dark,
-              systemNavigationBarColor: Colors.black,
-              systemNavigationBarIconBrightness: Brightness.light,
-            ),
-            child: SafeArea(
-              bottom: false,
-              child: child ?? const SizedBox(),
-            ),
-          );
-        },
+        // builder: (context, child) {
+        //   return AnnotatedRegion<SystemUiOverlayStyle>(
+        //     value: const SystemUiOverlayStyle(
+        //       statusBarColor: Colors.black,
+        //       statusBarIconBrightness: Brightness.light, // Android: white icons
+        //       statusBarBrightness: Brightness.dark, // iOS: white icons
+        //     ),
+        //     child: child!,
+        //   );
+        // },
+        // builder: (context, child) {
+        //   // ✅ AnnotatedRegion here — closest to the actual UI
+        //   return SafeArea(
+        //     bottom: false,
+        //     child: child ?? const SizedBox(),
+        //   );
+        // },
       ),
     );
   }

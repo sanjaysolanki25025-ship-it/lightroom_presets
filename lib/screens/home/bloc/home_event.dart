@@ -69,3 +69,9 @@ class MarkTemplateNotFavouriteEvent extends HomeEvent {
   MarkTemplateNotFavouriteEvent(this.templateId, this.isLiked);
 }
 
+class HomeViewIndexChanged extends HomeEvent {
+  final int index;
+
+  HomeViewIndexChanged({required this.index});
+}
+

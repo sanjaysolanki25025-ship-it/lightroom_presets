@@ -16,6 +16,10 @@ class AdHelper {
   static InterstitialAd? _interstitialAd;
   static bool _interstitialAdLoaded = false;
   static bool _isAdShowing = false;
+  static bool isCategoryAdLoadingOrShowing = false;
+  static bool isLoadMoreAdLoadingOrShowing = false;
+  static bool cancelLoadMoreAd = false;
+  static bool isBackButtonAdLoadingOrShowing = false;
 
   // Public getter to know if an interstitial ad is ready to be shown
   static bool get isInterstitialReady => _interstitialAdLoaded && _interstitialAd != null && !_isAdShowing;
@@ -33,26 +37,96 @@ class AdHelper {
     required String adUnitId,
     required VoidCallback onComplete,
   }) {
+    debugPrint("=== Interstitial Requested ===");
+    debugPrint("Ad Unit Id: $adUnitId");
+
+    if (_isUserSubscribed) {
+      debugPrint("User subscribed, skipping ad");
+      onComplete();
+      return;
+    }
+
     InterstitialAd.load(
       adUnitId: adUnitId,
       request: const AdRequest(),
       adLoadCallback: InterstitialAdLoadCallback(
         onAdLoaded: (ad) {
+          debugPrint("Interstitial Loaded");
+          debugPrint("Ad Unit Id: $adUnitId");
+          debugPrint("Response Info: ${ad.responseInfo}");
+
           ad.fullScreenContentCallback = FullScreenContentCallback(
             onAdDismissedFullScreenContent: (ad) {
+              debugPrint("Interstitial Dismissed");
               ad.dispose();
               onComplete();
             },
             onAdFailedToShowFullScreenContent: (ad, error) {
+              debugPrint(
+                "Interstitial Failed To Show: ${error.code} ${error.message}",
+              );
               ad.dispose();
               onComplete();
+            },
+            onAdShowedFullScreenContent: (ad) {
+              debugPrint("Interstitial Shown");
+            },
+            onAdImpression: (ad) {
+              debugPrint("Interstitial Impression");
+            },
+            onAdClicked: (ad) {
+              debugPrint("Interstitial Clicked");
+            },
+          );
+
+          debugPrint("Calling ad.show()");
+          ad.show();
+        },
+        onAdFailedToLoad: (error) {
+          debugPrint(
+            "Interstitial Failed To Load: ${error.code} ${error.message}",
+          );
+          debugPrint("Ad Unit Id: $adUnitId");
+
+          onComplete();
+        },
+      ),
+    );
+  }
+
+  static void showLoadMoreInterstitialAd({
+    required String adUnitId,
+  }) {
+    if (_isUserSubscribed) return;
+
+    cancelLoadMoreAd = false;
+    isLoadMoreAdLoadingOrShowing = true;
+
+    InterstitialAd.load(
+      adUnitId: adUnitId,
+      request: const AdRequest(),
+      adLoadCallback: InterstitialAdLoadCallback(
+        onAdLoaded: (ad) {
+          if (cancelLoadMoreAd) {
+            ad.dispose();
+            isLoadMoreAdLoadingOrShowing = false;
+            return;
+          }
+          ad.fullScreenContentCallback = FullScreenContentCallback(
+            onAdDismissedFullScreenContent: (ad) {
+              ad.dispose();
+              isLoadMoreAdLoadingOrShowing = false;
+            },
+            onAdFailedToShowFullScreenContent: (ad, error) {
+              ad.dispose();
+              isLoadMoreAdLoadingOrShowing = false;
             },
           );
 
           ad.show();
         },
         onAdFailedToLoad: (error) {
-          onComplete();
+          isLoadMoreAdLoadingOrShowing = false;
         },
       ),
     );

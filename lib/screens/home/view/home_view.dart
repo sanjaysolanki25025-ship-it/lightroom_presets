@@ -24,7 +24,6 @@ import 'package:lightroom_template/screens/home/bloc/home_bloc.dart';
 import 'package:lightroom_template/screens/home/bloc/home_state.dart';
 import 'package:lightroom_template/screens/home/widgets/home_category_list.dart';
 import 'package:lightroom_template/screens/home/widgets/reel_item_widget.dart';
-import 'package:lightroom_template/screens/dng_image_preview/bloc/dng_conversion_bloc.dart';
 import 'package:lightroom_template/core/utils/in_app_update_manager.dart';
 
 class HomeView extends StatefulWidget {
@@ -73,7 +72,7 @@ class _HomeViewState extends State<HomeView> {
 
   void _handleDownload(LrPresetModel entry) {
     context.read<HomeBloc>().add(
-      DownloadImage(url: "${AppStrings.imageUrl}${entry.image.trim()}", fileName: entry.title),
+      DownloadImage(url: "${AppStrings.imageUrl}${entry.image.trim()}.dng", fileName: entry.title),
     );
   }
 
@@ -100,19 +99,19 @@ class _HomeViewState extends State<HomeView> {
   // ─────────────────────────────────────────────
   // PRECACHE: load next image into cache
   // ─────────────────────────────────────────────
-
-  void _precacheContentIndex(int contentIndex, List<LrPresetModel> entries) {
-    final url = _imageUrlForContentIndex(contentIndex, entries);
-    if (url == null) return;
-
-    // DNG image → use DngConversionBloc cache
-    if (url.toLowerCase().contains('.dng')) {
-      DngConversionBloc.precacheDng(url);
-    } else {
-      // Regular image → use Flutter's image cache
-      precacheImage(NetworkImage(url), context);
-    }
-  }
+  //
+  // void _precacheContentIndex(int contentIndex, List<LrPresetModel> entries) {
+  //   final url = _imageUrlForContentIndex(contentIndex, entries);
+  //   if (url == null) return;
+  //
+  //   // DNG image → use DngConversionBloc cache
+  //   if (url.toLowerCase().contains('.dng')) {
+  //     DngConversionBloc.precacheDng(url);
+  //   } else {
+  //     // Regular image → use Flutter's image cache
+  //     precacheImage(NetworkImage(url), context);
+  //   }
+  // }
 
   // ─────────────────────────────────────────────
   // EVICT: remove old image from cache
@@ -122,11 +121,7 @@ class _HomeViewState extends State<HomeView> {
     final url = _imageUrlForContentIndex(contentIndex, entries);
     if (url == null) return;
 
-    if (url.toLowerCase().contains('.dng')) {
-      DngConversionBloc.evictDng(url);
-    } else {
-      NetworkImage(url).evict();
-    }
+    NetworkImage(url).evict();
   }
 
   // ─────────────────────────────────────────────
@@ -135,12 +130,13 @@ class _HomeViewState extends State<HomeView> {
   // ─────────────────────────────────────────────
 
   void _onPageChanged(int pageIndex, List<LrPresetModel> entries) {
+    context.read<HomeBloc>().add(HomeViewIndexChanged(index: pageIndex));
     if (entries.isEmpty) return;
 
     final currentContentIndex = _contentIndexFromPageIndex(pageIndex);
 
     // ✅ Precache next content item
-    _precacheContentIndex(currentContentIndex + 1, entries);
+    // _precacheContentIndex(currentContentIndex + 1, entries);
 
     // ✅ Evict content item 3 pages behind current to free memory
     // e.g. page 0→ evict nothing, page 3 → evict index 0, page 4 → evict index 1
@@ -206,9 +202,10 @@ class _HomeViewState extends State<HomeView> {
                         context.read<HomeBloc>().add(StoreCoinEvent());
                       },
                       onComplete: () {
+                        final imageUrl = "${AppStrings.imageUrl}${state.entry?.image.trim() ?? ''}.dng";
                         context.read<HomeBloc>().add(
                           OpenInLightroom(
-                            url: "${AppStrings.imageUrl}${state.entry?.image.trim() ?? ''}",
+                            url: imageUrl,
                             fileName: fileName,
                           ),
                         );
@@ -219,9 +216,10 @@ class _HomeViewState extends State<HomeView> {
                     );
                   } else if (hasEnoughCoins) {
                     context.read<HomeBloc>().add(UsedCoin(coin: requiredCoins));
+                    final imageUrl = "${AppStrings.imageUrl}${state.entry?.image.trim() ?? ''}.dng";
                     context.read<HomeBloc>().add(
                       OpenInLightroom(
-                        url: "${AppStrings.imageUrl}${state.entry?.image.trim() ?? ''}",
+                        url: imageUrl,
                         fileName: fileName,
                       ),
                     );
@@ -234,7 +232,11 @@ class _HomeViewState extends State<HomeView> {
                         context.read<HomeBloc>().add(StoreCoinEvent());
                       },
                       onComplete: () {
-                        context.push(AppRoutesString.dinoView);
+                        context.push(AppRoutesString.dinoView).then((_) {
+                          if (context.mounted) {
+                            context.read<HomeBloc>().add(ResetHomeStatus());
+                          }
+                        });
                       },
                       onAdFailed: () {
                         context.read<HomeBloc>().add(LoadedRewardAD());
@@ -272,10 +274,6 @@ class _HomeViewState extends State<HomeView> {
               if (state.entries.isEmpty) {
                 _lastPrecachedIndex = -1;
               } else {
-                for (int i = _lastPrecachedIndex + 1; i < state.entries.length; i++) {
-                  _precacheContentIndex(i, state.entries);
-                  _lastPrecachedIndex = i;
-                }
 
                 // Show Dino dialog once per day when data is loaded successfully
                 if (state.status == HomeStatus.success) {
@@ -286,7 +284,11 @@ class _HomeViewState extends State<HomeView> {
                 }
               }
             } else if (state.status == HomeStatus.navigateToDinoGame) {
-              context.push(AppRoutesString.dinoView);
+              context.push(AppRoutesString.dinoView).then((_) {
+                if (context.mounted) {
+                  context.read<HomeBloc>().add(ResetHomeStatus());
+                }
+              });
             }
           },
           child: BlocBuilder<HomeBloc, HomeState>(
@@ -404,7 +406,11 @@ class _HomeViewState extends State<HomeView> {
                                       context.read<HomeBloc>().add(StoreCoinEvent());
                                     },
                                     onComplete: () {
-                                      context.push(AppRoutesString.dinoView);
+                                      context.push(AppRoutesString.dinoView).then((_) {
+                                        if (context.mounted) {
+                                          context.read<HomeBloc>().add(ResetHomeStatus());
+                                        }
+                                      });
                                     },
                                     onAdFailed: () {
                                       context.read<HomeBloc>().add(LoadedRewardAD());
@@ -429,7 +435,11 @@ class _HomeViewState extends State<HomeView> {
                                       context.read<HomeBloc>().add(StoreCoinEvent());
                                     },
                                     onComplete: () {
-                                      context.push(AppRoutesString.dinoView);
+                                      context.push(AppRoutesString.dinoView).then((_) {
+                                        if (context.mounted) {
+                                          context.read<HomeBloc>().add(ResetHomeStatus());
+                                        }
+                                      });
                                     },
                                     onAdFailed: () {
                                       context.read<HomeBloc>().add(LoadedRewardAD());
@@ -493,7 +503,11 @@ class _HomeViewState extends State<HomeView> {
                                       context.read<HomeBloc>().add(StoreCoinEvent());
                                     },
                                     onComplete: () {
-                                      context.push(AppRoutesString.dinoView);
+                                      context.push(AppRoutesString.dinoView).then((_) {
+                                        if (context.mounted) {
+                                          context.read<HomeBloc>().add(ResetHomeStatus());
+                                        }
+                                      });
                                     },
                                     onAdFailed: () {
                                       context.read<HomeBloc>().add(LoadedRewardAD());
@@ -511,13 +525,14 @@ class _HomeViewState extends State<HomeView> {
                     ),
 
                   /// TOP CATEGORY LIST (Sticky)
-                  HomeCategoryList(
-                    categories: state.categories,
-                    selectedCategory: state.selectedCategory,
-                    onCategorySelected: (categoryName) {
-                      context.read<HomeBloc>().add(ChangeCategory(categoryName));
-                    },
-                  ),
+                  if ((state.currentViewIndex + 1) % 3 != 0)
+                    HomeCategoryList(
+                      categories: state.categories,
+                      selectedCategory: state.selectedCategory,
+                      onCategorySelected: (categoryName) {
+                        context.read<HomeBloc>().add(ChangeCategory(categoryName));
+                      },
+                    ),
                 ],
               );
             },

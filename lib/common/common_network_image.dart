@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:lightroom_template/common/common_loader.dart';
-import 'package:lightroom_template/screens/dng_image_preview/view/dng_image_preview_view.dart';
 import 'package:lightroom_template/core/constant/app_colors.dart';
 import 'package:shimmer/shimmer.dart';
 
@@ -152,15 +151,6 @@ class CommonNetworkImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    /// DNG with pre-cache/conversion
-    if (imageUrl.toLowerCase().contains('.dng') && isPreCache) {
-      return DngImagePreview(
-        imageUrl: imageUrl,
-        fit: fit,
-        isShimmer: isShimmer,
-      );
-    }
-
     /// Direct image load
     return Image.network(
       imageUrl,

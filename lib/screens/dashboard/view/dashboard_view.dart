@@ -97,39 +97,52 @@ class DashboardView extends StatelessWidget {
                 }
               }
             },
-            child: Scaffold(
-              body: Stack(
-                children: [
-                  IndexedStack(index: state.currentIndex, children: screens(context)),
-                  Positioned(
-                    left: 20,
-                    right: 20,
-                    bottom: 5,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(100),
-                      child: Container(
-                        height: 70,
-                        decoration: BoxDecoration(
-                          color: AppColors.surfaceContainerHighest.withValues(alpha: 0.5),
-                          borderRadius: BorderRadius.circular(100),
-                          border: Border.all(
-                            color: AppColors.outlineVariant.withValues(alpha: 0.6),
-                            width: 1,
+            child: SafeArea(
+              child: Scaffold(
+                body: Stack(
+                  children: [
+                    IndexedStack(index: state.currentIndex, children: screens(context)),
+                    BlocBuilder<HomeBloc, HomeState>(
+                      builder: (context, homeState) {
+                        final isHomeAdPage = state.currentIndex == 0 &&
+                            ((homeState.currentViewIndex + 1) % 3 == 0);
+              
+                        if (isHomeAdPage) {
+                          return const SizedBox.shrink();
+                        }
+              
+                        return Positioned(
+                          left: 20,
+                          right: 20,
+                          bottom: 5,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(100),
+                            child: Container(
+                              height: 70,
+                              decoration: BoxDecoration(
+                                color: AppColors.surfaceContainerHighest.withValues(alpha: 0.5),
+                                borderRadius: BorderRadius.circular(100),
+                                border: Border.all(
+                                  color: AppColors.outlineVariant.withValues(alpha: 0.6),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                children: [
+                                  _buildNavItem(context, Icons.home_rounded, 0, state.currentIndex),
+                                  _buildNavItem(context, Icons.search_rounded, 1, state.currentIndex),
+                                  _buildNavItem(context, Icons.favorite_rounded, 2, state.currentIndex),
+                                  _buildNavItem(context, Icons.settings, 3, state.currentIndex),
+                                ],
+                              ),
+                            ),
                           ),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            _buildNavItem(context, Icons.home_rounded, 0, state.currentIndex),
-                            _buildNavItem(context, Icons.search_rounded, 1, state.currentIndex),
-                            _buildNavItem(context, Icons.favorite_rounded, 2, state.currentIndex),
-                            _buildNavItem(context, Icons.settings, 3, state.currentIndex),
-                          ],
-                        ),
-                      ),
+                        );
+                      },
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           );

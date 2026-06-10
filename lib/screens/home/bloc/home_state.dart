@@ -30,6 +30,7 @@ class HomeState {
   final bool hasReachedMax;
   final LrPresetModel? entry;
   final bool hasMore;
+  final int currentViewIndex;
 
   HomeState({
     this.status = HomeStatus.initial,
@@ -42,6 +43,7 @@ class HomeState {
     this.hasReachedMax = false,
     this.entry,
     this.hasMore = true,
+    this.currentViewIndex = 0,
   });
 
   HomeState copyWith({
@@ -55,6 +57,7 @@ class HomeState {
     bool? hasReachedMax,
     LrPresetModel? entry,
     bool? hasMore,
+    int? currentViewIndex,
   }) {
     return HomeState(
       status: status ?? this.status,
@@ -67,6 +70,7 @@ class HomeState {
       hasReachedMax: hasReachedMax ?? this.hasReachedMax,
       entry: entry ?? this.entry,
       hasMore: hasMore ?? this.hasMore,
+      currentViewIndex: currentViewIndex ?? this.currentViewIndex,
     );
   }
 }

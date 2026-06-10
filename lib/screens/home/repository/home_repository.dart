@@ -12,7 +12,7 @@ class HomeRepository {
   /// Returns a PagedPresents so caller receives mapped models plus pagination info.
   Future<Either<FailureModel, PagedPresents>> fetchPresentWithPagination({
     String? category,
-    int limit = 2,
+    int limit = 6,
     DocumentSnapshot? lastDoc,
     double? randomStart,
   }) async {

@@ -6,7 +6,8 @@ import 'package:lightroom_template/data/helpers/preferences_helper.dart';
 import '../bloc/full_screen_native_ad_bloc.dart';
 
 class FullScreenNativeAdView extends StatelessWidget {
-  const FullScreenNativeAdView({super.key});
+  final String? adId;
+  const FullScreenNativeAdView({super.key, this.adId});
 
   static bool get _isUserSubscribed {
     return AppPreferences().getBool(AppPreferences.subscriptionPlan) ?? false;
@@ -18,11 +19,11 @@ class FullScreenNativeAdView extends StatelessWidget {
       return const SizedBox();
     }
 
-    final topPadding = MediaQuery.of(context).padding.top + 60.0;
-    const bottomPadding = 85.0;
+    final topPadding = MediaQuery.of(context).padding.top;
+    const bottomPadding = 0.0;
 
     return BlocProvider(
-      create: (context) => FullScreenNativeAdBloc()..add(LoadFullScreenNativeAdEvent()),
+      create: (context) => FullScreenNativeAdBloc()..add(LoadFullScreenNativeAdEvent(adId: adId)),
       child: BlocBuilder<FullScreenNativeAdBloc, FullScreenNativeAdState>(
         builder: (context, state) {
           return Scaffold(

@@ -39,7 +39,6 @@ class _OtherAppsViewState extends State<OtherAppsView> {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      top: false,
       child: Scaffold(
         appBar: PreferredSize(
           preferredSize: const Size.fromHeight(kToolbarHeight),

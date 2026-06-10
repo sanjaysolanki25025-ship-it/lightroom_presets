@@ -10,6 +10,7 @@ import 'package:lightroom_template/core/constant/app_string.dart';
 import 'package:lightroom_template/core/utils/app_text_style.dart';
 import 'package:lightroom_template/data/models/lr_preset_model.dart';
 import 'package:lightroom_template/screens/home/widgets/common_action_button.dart';
+import 'package:share_plus/share_plus.dart';
 
 class ReelItemWidget extends StatelessWidget {
   final LrPresetModel entry;
@@ -38,7 +39,7 @@ class ReelItemWidget extends StatelessWidget {
     //   finalImageUrl = finalImageUrl.replaceAll(RegExp(r'\.dng', caseSensitive: false), '.png');
     // }
     final String finalImageUrl =
-        "${AppStrings.imageUrl}${entry.image.trim()}";
+        "${AppStrings.imageUrl}${entry.image.trim()}.png";
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -97,8 +98,15 @@ class ReelItemWidget extends StatelessWidget {
               CommonActionButton(assetPath: AppImagesString.imgLightroom, onTap: onOpenInLightroom),
               SBH10(),
               CommonActionButton(assetPath: AppImagesString.imgDownload, onTap: onDownloadTap),
-              // SBH5(),
-              // CommonLottieAsset(assetName: AppLottiesString.pro, height: 60, width: 60),
+              SBH10(),
+              CommonActionButton(
+                icon: Icons.share,
+                onTap: () {
+                  Share.share(AppStrings.txtShareMessage);
+                },
+                iconColor: AppColors.whiteColor,
+                imageSize: 20,
+              ),
             ],
           ),
         ),

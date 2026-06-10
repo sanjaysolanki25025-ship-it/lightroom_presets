@@ -1,3 +1,4 @@
+import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lightroom_template/common/ad_widgets/native_ad/bloc/native_ad_bloc.dart';
@@ -9,6 +10,7 @@ import 'package:lightroom_template/core/constant/app_ad_id_string.dart';
 import 'package:lightroom_template/core/constant/app_colors.dart';
 import 'package:lightroom_template/core/constant/app_string.dart';
 import 'package:lightroom_template/core/utils/app_text_style.dart';
+import 'package:lightroom_template/core/utils/common_functions.dart';
 import 'package:lightroom_template/data/helpers/preferences_helper.dart';
 
 class CommonBottomSheet {
@@ -24,6 +26,8 @@ class CommonBottomSheet {
     String? secondButtonText,
     VoidCallback? secondButtonOnTap,
   }) {
+    final remoteConfig = FirebaseRemoteConfig.instance;
+    late final String howToUseLink = remoteConfig.getString("howToUseLink");
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -61,7 +65,21 @@ class CommonBottomSheet {
                 textAlign: TextAlign.center,
               ),
               SBH5(),
-
+              howToUseLink.isEmpty
+                  ? SizedBox.shrink()
+                  : GestureDetector(
+                      onTap: () async {
+                        await CommonFunction.launchUrlLink(howToUseLink);
+                      },
+                      child: CommonTextWidget(
+                        text: AppStrings.txtHowToUse,
+                        isUnderline: true,
+                        textStyle: size12TextStyle(textColor: AppColors.primaryContainer),
+                        underlineColor: AppColors.primaryContainer,
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+              SBH5(),
               if (secondButtonText != null && secondButtonOnTap != null)
                 Row(
                   children: [

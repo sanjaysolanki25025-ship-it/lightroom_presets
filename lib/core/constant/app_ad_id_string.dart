@@ -177,10 +177,15 @@ class AppAdIdString {
   static final String backButtonInterstitialAd = _isAndroid ? 'ca-app-pub-1234444627237787/9658755368' : '';
 
   // restart dino interstitial ad
-  static final String restartDinoInterstitialAd = _isAndroid ? 'ca-app-pub-1234444627237787/1535202857' : '';
+  // static final String restartDinoInterstitialAd = _isAndroid ? 'ca-app-pub-1234444627237787/1535202857' : '';
 
   // load more interstitial ad
   static final String loadMoreInterstitialAd = _isAndroid ? 'ca-app-pub-1234444627237787/2349058241' : '';
+
+  // load more interstitial ad
+  static final String categoryOnTapInterstitialAd = _isAndroid
+      ? 'ca-app-pub-1234444627237787/2349588472'
+      : '';
 
   ///============ banner ad ===========
   // discover banner ad
@@ -235,6 +240,9 @@ class AppAdIdString {
   // onboarding Native ad 3
   static final String onBoardingNativeAd3 = _isAndroid ? 'ca-app-pub-1234444627237787/6703769059' : '';
 
+  // onboarding full screen ad
+  static final String onBoardingFullScreenAd = _isAndroid ? 'ca-app-pub-1234444627237787/6993748362' : '';
+
   // template detail native ad
   static final String presetDetailBottomNativeAd = _isAndroid ? 'ca-app-pub-1234444627237787/2777956167' : '';
 
@@ -248,9 +256,7 @@ class AppAdIdString {
   static final String settingNativeAd = _isAndroid ? 'ca-app-pub-1234444627237787/6540117528' : '';
 
   // splash screen native Ad
-  static final String splashNativeAd = _isAndroid
-      ? 'ca-app-pub-1234444627237787/1201150617'
-      : '';
+  static final String splashNativeAd = _isAndroid ? 'ca-app-pub-1234444627237787/1201150617' : '';
 
   // rate us native ad
   static final String rateUsNativeAd = _isAndroid ? 'ca-app-pub-1234444627237787/4534192287' : '';
@@ -267,4 +273,7 @@ class AppAdIdString {
 
   // use lr rewarded ad
   static final String useLrRewardedAd = _isAndroid ? 'ca-app-pub-1234444627237787/1943386646' : '';
+
+  // dino game restart rewarded ad
+  static final String dinoGameRestart = _isAndroid ? 'ca-app-pub-1234444627237787/1518060404' : '';
 }

@@ -152,20 +152,20 @@ class _NativeAdViewState extends State<NativeAdView> {
 
                   const Spacer(),
 
-                  GestureDetector(
-                    onTap: () {
-                      // context.push(AppRoutesString.subscriptionView);
-                    },
-                    child: CommonTextWidget(
-                      text: AppStrings.txtRemoveAds,
-                      isUnderline: true,
-                      underlineColor: AppColors.greyColor,
-                      textStyle: size12TextStyle(
-                        textColor: AppColors.greyColor,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
+                  // GestureDetector(
+                  //   onTap: () {
+                  //     // context.push(AppRoutesString.subscriptionView);
+                  //   },
+                  //   child: CommonTextWidget(
+                  //     text: AppStrings.txtRemoveAds,
+                  //     isUnderline: true,
+                  //     underlineColor: AppColors.greyColor,
+                  //     textStyle: size12TextStyle(
+                  //       textColor: AppColors.greyColor,
+                  //       fontWeight: FontWeight.w700,
+                  //     ),
+                  //   ),
+                  // ),
                 ],
               ),
             ),
