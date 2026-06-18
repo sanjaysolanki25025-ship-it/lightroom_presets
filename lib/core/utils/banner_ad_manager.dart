@@ -23,6 +23,8 @@ class BannerAdManager {
 
   final Map<String, List<_CachedAdInfo>> _cachedAds = {};
   final Map<String, bool> _isLoading = {};
+  final Map<String, int> _retryCount = {};
+  final Map<String, Timer> _retryTimers = {};
 
   // -------------------------------------------------------
   // INIT
@@ -67,7 +69,8 @@ class BannerAdManager {
 
     log('BANNER PRE CACHE START | $adId | ScreenWidth: $screenWidth');
 
-    final AdSize adaptiveSize = await AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(screenWidth) ?? AdSize.banner;
+    final AdSize adaptiveSize =
+        await AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(screenWidth) ?? AdSize.banner;
 
     BannerAd(
       adUnitId: adId,
@@ -76,6 +79,8 @@ class BannerAdManager {
       listener: BannerAdListener(
         onAdLoaded: (ad) {
           cache.add(_CachedAdInfo(ad as BannerAd, DateTime.now()));
+          _retryCount[adId] = 0;
+          _retryTimers[adId]?.cancel();
           _isLoading[adId] = false;
           log('BANNER PRE CACHE SUCCESS | $adId');
         },
@@ -83,14 +88,14 @@ class BannerAdManager {
           log('BANNER PRE CACHE FAILED | $adId | Error: ${error.message}');
           ad.dispose();
           _isLoading[adId] = false;
-
+          _scheduleRetry(adId);
           // Retry pre-caching after FailureModel
-          Future.delayed(const Duration(seconds: 5), () {
-            if (_cachedAds[adId]?.isEmpty ?? true) {
-              log('BANNER RETRY PRE-CACHE | $adId | Retrying after FailureModel...');
-              preCacheAd(adId);
-            }
-          });
+          // Future.delayed(const Duration(seconds: 5), () {
+          //   if (_cachedAds[adId]?.isEmpty ?? true) {
+          //     log('BANNER RETRY PRE-CACHE | $adId | Retrying after FailureModel...');
+          //     preCacheAd(adId);
+          //   }
+          // });
         },
       ),
     ).load();
@@ -133,6 +138,26 @@ class BannerAdManager {
     preCacheAd(adId);
 
     return adInfo.ad;
+  }
+
+  void _scheduleRetry(String adId) {
+    _retryTimers[adId]?.cancel();
+
+    final retry = (_retryCount[adId] ?? 0) + 1;
+    _retryCount[adId] = retry;
+
+    final delaySeconds = (60 * retry).clamp(60, 300);
+
+    log(
+      'BANNER RETRY PRE-CACHE | '
+      '$adId | Retry #$retry after ${delaySeconds}s',
+    );
+
+    _retryTimers[adId] = Timer(Duration(seconds: delaySeconds), () {
+      if ((_cachedAds[adId]?.isEmpty ?? true) && !(_isLoading[adId] ?? false)) {
+        preCacheAd(adId);
+      }
+    });
   }
 
   // -------------------------------------------------------

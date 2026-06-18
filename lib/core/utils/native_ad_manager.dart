@@ -33,6 +33,9 @@ class NativeAdManager {
 
   NativeAdManager._internal();
 
+  final Map<String, int> _retryCount = {};
+  final Map<String, Timer> _retryTimers = {};
+
   static final Map<String, AdCacheConfig> _configs = {
     AppAdIdString.splashNativeAd: AdCacheConfig(
       adName: 'Splash Native Ad',
@@ -213,7 +216,7 @@ class NativeAdManager {
         adId != AppAdIdString.favouriteBottomNativeAd &&
         adId != AppAdIdString.favouriteNativeAd &&
         adId != AppAdIdString.presetDetailNativeAd &&
-        adId != AppAdIdString.presetDetailNativeAd &&
+        adId != AppAdIdString.presetDetailBottomNativeAd &&
         adId != AppAdIdString.settingNativeAd &&
         adId != AppAdIdString.settingBottomNativeAd &&
         adId != AppAdIdString.exitAppNativeAd &&
@@ -257,6 +260,8 @@ class NativeAdManager {
         listener: NativeAdListener(
           onAdLoaded: (ad) {
             cache.add(ad as NativeAd);
+            _retryCount[adId] = 0;
+            _retryTimers[adId]?.cancel();
             _getStats(adId).loaded++;
             _preCacheSuccessful[adId] = true;
 
@@ -278,38 +283,38 @@ class NativeAdManager {
 
             // Retry pre-caching after FailureModel (except for splash native ad)
             if (adId != AppAdIdString.splashNativeAd) {
-              Future.delayed(const Duration(seconds: 5), () {
-                final currentCache = _cachedAds[adId] ?? [];
-                bool shouldRetry = false;
-
-                if (adId == AppAdIdString.homeReelsNativeAd ||
-                    adId == AppAdIdString.homeBottomNativeAd ||
-                    adId == AppAdIdString.discoverNativeAd ||
-                    adId == AppAdIdString.discoverBottomNativeAd ||
-                    adId == AppAdIdString.favouriteNativeAd ||
-                    adId == AppAdIdString.favouriteBottomNativeAd ||
-                    adId == AppAdIdString.presetDetailNativeAd ||
-                    adId == AppAdIdString.presetDetailNativeAd ||
-                    adId == AppAdIdString.settingNativeAd ||
-                    adId == AppAdIdString.settingBottomNativeAd ||
-                    adId == AppAdIdString.exitAppNativeAd ||
-                    adId == AppAdIdString.noDataFoundNativeAd ||
-                    adId == AppAdIdString.socialMediaNativeAd ||
-                    adId == AppAdIdString.rateUsNativeAd
-                ) {
-                  shouldRetry = currentCache.length < config.cacheSize && !(_isLoading[adId] ?? false);
-                } else {
-                  shouldRetry =
-                      currentCache.isEmpty &&
-                      !(_isLoading[adId] ?? false) &&
-                      _preCacheSuccessful[adId] != true;
-                }
-
-                if (shouldRetry) {
-                  log('RETRY PRE-CACHE | ${config.adName} | $adId | Retrying after FailureModel...');
-                  _loadBatchForAd(adId);
-                }
-              });
+              _scheduleRetry(adId);
+              // Future.delayed(const Duration(seconds: 5), () {
+              //   final currentCache = _cachedAds[adId] ?? [];
+              //   bool shouldRetry = false;
+              //
+              //   if (adId == AppAdIdString.homeReelsNativeAd ||
+              //       adId == AppAdIdString.homeBottomNativeAd ||
+              //       adId == AppAdIdString.discoverNativeAd ||
+              //       adId == AppAdIdString.discoverBottomNativeAd ||
+              //       adId == AppAdIdString.favouriteNativeAd ||
+              //       adId == AppAdIdString.favouriteBottomNativeAd ||
+              //       adId == AppAdIdString.presetDetailNativeAd ||
+              //       adId == AppAdIdString.presetDetailNativeAd ||
+              //       adId == AppAdIdString.settingNativeAd ||
+              //       adId == AppAdIdString.settingBottomNativeAd ||
+              //       adId == AppAdIdString.exitAppNativeAd ||
+              //       adId == AppAdIdString.noDataFoundNativeAd ||
+              //       adId == AppAdIdString.socialMediaNativeAd ||
+              //       adId == AppAdIdString.rateUsNativeAd) {
+              //     shouldRetry = currentCache.length < config.cacheSize && !(_isLoading[adId] ?? false);
+              //   } else {
+              //     shouldRetry =
+              //         currentCache.isEmpty &&
+              //         !(_isLoading[adId] ?? false) &&
+              //         _preCacheSuccessful[adId] != true;
+              //   }
+              //
+              //   if (shouldRetry) {
+              //     log('RETRY PRE-CACHE | ${config.adName} | $adId | Retrying after FailureModel...');
+              //     _loadBatchForAd(adId);
+              //   }
+              // });
             }
           },
         ),
@@ -434,6 +439,53 @@ class NativeAdManager {
         'STATS | ${config?.adName} | $adId | Loaded: ${stats['loaded']} | Served: ${stats['served']} | Failed: ${stats['failed']} | Cached: ${stats['cached']}',
       );
     }
+  }
+
+  void _scheduleRetry(String adId) {
+    final config = _configs[adId];
+    if (config == null) return;
+
+    _retryTimers[adId]?.cancel();
+
+    final retry = (_retryCount[adId] ?? 0) + 1;
+    _retryCount[adId] = retry;
+
+    final delaySeconds = (30 * retry).clamp(30, 300);
+
+    log(
+      'RETRY PRE-CACHE | ${config.adName} | '
+      '$adId | Retry #$retry after ${delaySeconds}s',
+    );
+
+    _retryTimers[adId] = Timer(Duration(seconds: delaySeconds), () {
+      final currentCache = _cachedAds[adId] ?? [];
+
+      bool shouldRetry = false;
+
+      if (adId == AppAdIdString.homeReelsNativeAd ||
+          adId == AppAdIdString.homeBottomNativeAd ||
+          adId == AppAdIdString.discoverNativeAd ||
+          adId == AppAdIdString.discoverBottomNativeAd ||
+          adId == AppAdIdString.favouriteNativeAd ||
+          adId == AppAdIdString.favouriteBottomNativeAd ||
+          adId == AppAdIdString.presetDetailNativeAd ||
+          adId == AppAdIdString.presetDetailBottomNativeAd ||
+          adId == AppAdIdString.settingNativeAd ||
+          adId == AppAdIdString.settingBottomNativeAd ||
+          adId == AppAdIdString.exitAppNativeAd ||
+          adId == AppAdIdString.noDataFoundNativeAd ||
+          adId == AppAdIdString.socialMediaNativeAd ||
+          adId == AppAdIdString.rateUsNativeAd) {
+        shouldRetry = currentCache.length < config.cacheSize && !(_isLoading[adId] ?? false);
+      } else {
+        shouldRetry =
+            currentCache.isEmpty && !(_isLoading[adId] ?? false) && _preCacheSuccessful[adId] != true;
+      }
+
+      if (shouldRetry) {
+        _loadBatchForAd(adId);
+      }
+    });
   }
 
   // -------------------------------------------------------
