@@ -23,6 +23,7 @@ import 'package:lightroom_template/routes/app_route_string.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lightroom_template/screens/home/view/home_view.dart';
 import 'package:lightroom_template/screens/home/widgets/common_action_button.dart';
+import 'package:lightroom_template/core/utils/native_ad_manager.dart';
 import '../bloc/discover_bloc.dart';
 import '../widgets/discover_category_widget.dart';
 import '../../../common/grid_item_widget.dart';
@@ -58,62 +59,73 @@ class _DiscoverViewState extends State<DiscoverView> {
             CommonActionButton(
               assetPath: AppImagesString.imgDino,
               onTap: () {
-                final int totalCoin = AppPreferences().getInt(AppPreferences.coin) ?? 0;
-                if (totalCoin < 5) {
-                  CommonBottomSheet.showCommonBottomSheet(
-                    adId: AppAdIdString.discoverBottomNativeAd,
-                    context: context,
-                    firstButtonText: AppStrings.txtWatchAd,
-                    title: AppStrings.txtNotEnoughCoinsWatchAnAdToPlay,
-                    firstButtonOnTap: () {
-                      Navigator.of(context).pop();
-                      context.read<DiscoverBloc>().add(DiscoverLoadRewardAD());
-                      AdHelper.showRewardedAd(
-                        adUnitId: AppAdIdString.playDinoRewardedAd,
-                        onRewardEarned: () {
-                          context.read<DiscoverBloc>().add(DiscoverLoadedRewardAD());
-                          context.read<DiscoverBloc>().add(DiscoverStoreCoinEvent());
-                        },
-                        onComplete: () {
-                          context.push(AppRoutesString.dinoView);
-                        },
-                        onAdFailed: () {
-                          context.read<DiscoverBloc>().add(DiscoverLoadedRewardAD());
-                        },
-                      );
-                    },
-                  );
-                } else {
-                  CommonBottomSheet.showCommonBottomSheet(
-                    adId: AppAdIdString.discoverBottomNativeAd,
-                    context: context,
-                    firstButtonText: "🔓 ${AppStrings.txtFiveLetter} ${AppStrings.txtCoins}",
-                    secondButtonText: AppStrings.txtWatchAd,
-                    title: AppStrings.txtPlayGameReward,
-                    secondButtonOnTap: () {
-                      Navigator.of(context).pop();
-                      context.read<DiscoverBloc>().add(DiscoverLoadRewardAD());
-                      AdHelper.showRewardedAd(
-                        adUnitId: AppAdIdString.playDinoRewardedAd,
-                        onRewardEarned: () {
-                          context.read<DiscoverBloc>().add(DiscoverLoadedRewardAD());
-                          context.read<DiscoverBloc>().add(DiscoverStoreCoinEvent());
-                        },
-                        onComplete: () {
-                          context.push(AppRoutesString.dinoView);
-                        },
-                        onAdFailed: () {
-                          context.read<DiscoverBloc>().add(DiscoverLoadedRewardAD());
-                        },
-                      );
-                    },
-      
-                    firstButtonOnTap: () {
-                      context.pop();
-                      context.read<DiscoverBloc>().add(DiscoverPlayDinoGame());
-                    },
-                  );
+                CommonDialog.loaderDialog(context: context);
+                bool isSubscribed = AppPreferences().getBool(AppPreferences.subscriptionPlan) ?? false;
+                if (!isSubscribed) {
+                  NativeAdManager().precacheAd(AppAdIdString.discoverBottomNativeAd);
                 }
+
+                Future.delayed(const Duration(seconds: 2), () {
+                  if (context.mounted) {
+                    CommonDialog.closeDialog(context: context);
+                    final int totalCoin = AppPreferences().getInt(AppPreferences.coin) ?? 0;
+                    if (totalCoin < 5) {
+                      CommonBottomSheet.showCommonBottomSheet(
+                        adId: AppAdIdString.discoverBottomNativeAd,
+                        context: context,
+                        firstButtonText: AppStrings.txtWatchAd,
+                        title: AppStrings.txtNotEnoughCoinsWatchAnAdToPlay,
+                        firstButtonOnTap: () {
+                          Navigator.of(context).pop();
+                          context.read<DiscoverBloc>().add(DiscoverLoadRewardAD());
+                          AdHelper.showRewardedAd(
+                            adUnitId: AppAdIdString.playDinoRewardedAd,
+                            onRewardEarned: () {
+                              context.read<DiscoverBloc>().add(DiscoverLoadedRewardAD());
+                              context.read<DiscoverBloc>().add(DiscoverStoreCoinEvent());
+                            },
+                            onComplete: () {
+                              context.push(AppRoutesString.dinoView);
+                            },
+                            onAdFailed: () {
+                              context.read<DiscoverBloc>().add(DiscoverLoadedRewardAD());
+                            },
+                          );
+                        },
+                      );
+                    } else {
+                      CommonBottomSheet.showCommonBottomSheet(
+                        adId: AppAdIdString.discoverBottomNativeAd,
+                        context: context,
+                        firstButtonText: "🔓 ${AppStrings.txtFiveLetter} ${AppStrings.txtCoins}",
+                        secondButtonText: AppStrings.txtWatchAd,
+                        title: AppStrings.txtPlayGameReward,
+                        secondButtonOnTap: () {
+                          Navigator.of(context).pop();
+                          context.read<DiscoverBloc>().add(DiscoverLoadRewardAD());
+                          AdHelper.showRewardedAd(
+                            adUnitId: AppAdIdString.playDinoRewardedAd,
+                            onRewardEarned: () {
+                              context.read<DiscoverBloc>().add(DiscoverLoadedRewardAD());
+                              context.read<DiscoverBloc>().add(DiscoverStoreCoinEvent());
+                            },
+                            onComplete: () {
+                              context.push(AppRoutesString.dinoView);
+                            },
+                            onAdFailed: () {
+                              context.read<DiscoverBloc>().add(DiscoverLoadedRewardAD());
+                            },
+                          );
+                        },
+          
+                        firstButtonOnTap: () {
+                          context.pop();
+                          context.read<DiscoverBloc>().add(DiscoverPlayDinoGame());
+                        },
+                      );
+                    }
+                  }
+                });
               },
               imageSize: 45,
               removeDecoration: true,
@@ -163,9 +175,9 @@ class _DiscoverViewState extends State<DiscoverView> {
                               if (showAd) {
                                 if (!AdHelper.isCategoryAdLoadingOrShowing) {
                                   AdHelper.isCategoryAdLoadingOrShowing = true;
-                                  AdHelper.showInterstitialAd(
+                                  AdHelper.instantShowInterstitialAd(
                                     adUnitId: AppAdIdString.categoryOnTapInterstitialAd,
-                                    onComplete: () {
+                                    onAdClosed: () {
                                       AdHelper.isCategoryAdLoadingOrShowing = false;
                                     },
                                   );
@@ -247,34 +259,45 @@ class _DiscoverViewState extends State<DiscoverView> {
                                               /// First Item
                                               Expanded(
                                                 child: GestureDetector(
-                                                  onTap: () async {
-                                                    AdHelper.cancelLoadMoreAd = true;
-                                                    final bool? result = await context.push<bool>(
-                                                      AppRoutesString.templateDetailView,
-                                                      extra: state.entries[firstIndex],
-                                                    );
-      
-                                                    if (result == true) {
-                                                      if ((AppPreferences().getInt(
-                                                                AppPreferences.onBackPress,
-                                                              ) ??
-                                                              0) >
-                                                          1) {
-                                                        AppPreferences().setInt(
-                                                          AppPreferences.onBackPress,
-                                                          0,
+                                                  onTap: () {
+                                                    CommonDialog.loaderDialog(context: context);
+                                                    bool isSubscribed = AppPreferences().getBool(AppPreferences.subscriptionPlan) ?? false;
+                                                    if (!isSubscribed) {
+                                                      NativeAdManager().precacheAd(AppAdIdString.presetDetailNativeAd);
+                                                    }
+
+                                                    Future.delayed(const Duration(seconds: 2), () async {
+                                                      if (context.mounted) {
+                                                        CommonDialog.closeDialog(context: context);
+                                                        AdHelper.cancelLoadMoreAd = true;
+                                                        final bool? result = await context.push<bool>(
+                                                          AppRoutesString.templateDetailView,
+                                                          extra: state.entries[firstIndex],
                                                         );
-                                                        if (!AdHelper.isBackButtonAdLoadingOrShowing) {
-                                                          AdHelper.isBackButtonAdLoadingOrShowing = true;
-                                                          AdHelper.showInterstitialAd(
-                                                            adUnitId: AppAdIdString.backButtonInterstitialAd,
-                                                            onComplete: () {
-                                                              AdHelper.isBackButtonAdLoadingOrShowing = false;
-                                                            },
-                                                          );
+          
+                                                        if (result == true) {
+                                                          if ((AppPreferences().getInt(
+                                                                    AppPreferences.onBackPress,
+                                                                  ) ??
+                                                                  0) >
+                                                              1) {
+                                                            AppPreferences().setInt(
+                                                              AppPreferences.onBackPress,
+                                                              0,
+                                                            );
+                                                            if (!AdHelper.isBackButtonAdLoadingOrShowing) {
+                                                              AdHelper.isBackButtonAdLoadingOrShowing = true;
+                                                              AdHelper.instantShowInterstitialAd(
+                                                                adUnitId: AppAdIdString.backButtonInterstitialAd,
+                                                                onAdClosed: () {
+                                                                  AdHelper.isBackButtonAdLoadingOrShowing = false;
+                                                                },
+                                                              );
+                                                            }
+                                                          }
                                                         }
                                                       }
-                                                    }
+                                                    });
                                                   },
                                                   child: GridItemWidget(
                                                     entry: state.entries[firstIndex],
@@ -315,27 +338,38 @@ class _DiscoverViewState extends State<DiscoverView> {
                                               if (firstIndex + 1 < state.entries.length)
                                                 Expanded(
                                                   child: GestureDetector(
-                                                    onTap: () async {
-                                                      AdHelper.cancelLoadMoreAd = true;
-                                                      final bool? result = await context.push<bool>(
-                                                        AppRoutesString.templateDetailView,
-                                                        extra: state.entries[firstIndex + 1],
-                                                      );
-      
-                                                      if (result == true) {
-                                                        if ((AppPreferences().getInt(AppPreferences.onBackPress) ?? 0) > 1) {
-                                                          AppPreferences().setInt(AppPreferences.onBackPress, 0);
-                                                          if (!AdHelper.isBackButtonAdLoadingOrShowing) {
-                                                            AdHelper.isBackButtonAdLoadingOrShowing = true;
-                                                            AdHelper.showInterstitialAd(
-                                                              adUnitId: AppAdIdString.backButtonInterstitialAd,
-                                                              onComplete: () {
-                                                                AdHelper.isBackButtonAdLoadingOrShowing = false;
-                                                              },
-                                                            );
+                                                    onTap: () {
+                                                      CommonDialog.loaderDialog(context: context);
+                                                      bool isSubscribed = AppPreferences().getBool(AppPreferences.subscriptionPlan) ?? false;
+                                                      if (!isSubscribed) {
+                                                        NativeAdManager().precacheAd(AppAdIdString.presetDetailNativeAd);
+                                                      }
+
+                                                      Future.delayed(const Duration(seconds: 2), () async {
+                                                        if (context.mounted) {
+                                                          CommonDialog.closeDialog(context: context);
+                                                          AdHelper.cancelLoadMoreAd = true;
+                                                          final bool? result = await context.push<bool>(
+                                                            AppRoutesString.templateDetailView,
+                                                            extra: state.entries[firstIndex + 1],
+                                                          );
+          
+                                                          if (result == true) {
+                                                            if ((AppPreferences().getInt(AppPreferences.onBackPress) ?? 0) > 1) {
+                                                              AppPreferences().setInt(AppPreferences.onBackPress, 0);
+                                                              if (!AdHelper.isBackButtonAdLoadingOrShowing) {
+                                                                AdHelper.isBackButtonAdLoadingOrShowing = true;
+                                                                AdHelper.instantShowInterstitialAd(
+                                                                  adUnitId: AppAdIdString.backButtonInterstitialAd,
+                                                                  onAdClosed: () {
+                                                                    AdHelper.isBackButtonAdLoadingOrShowing = false;
+                                                                  },
+                                                                );
+                                                              }
+                                                            }
                                                           }
                                                         }
-                                                      }
+                                                      });
                                                     },
                                                     child: GridItemWidget(
                                                       entry: state.entries[firstIndex + 1],

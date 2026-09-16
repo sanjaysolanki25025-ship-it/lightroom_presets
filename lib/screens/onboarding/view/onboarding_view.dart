@@ -50,6 +50,7 @@ class _OnboardingViewState extends State<OnboardingView> {
   @override
   void initState() {
     context.read<OnboardingBloc>().add(StartButtonDelayEvent());
+    AdHelper.precacheInterstitialAd(adId: AppAdIdString.onboarding1InterstitialAd);
     super.initState();
   }
 
@@ -240,6 +241,13 @@ class _OnboardingViewState extends State<OnboardingView> {
           onTap: () {
             if (currentIndex == 3) {
               context.read<OnboardingBloc>().add(SaveOnTapEvent());
+            } else if (currentIndex == 0) {
+              AdHelper.showInterstitialAd(
+                adId: AppAdIdString.onboarding1InterstitialAd,
+                onAdClosed: () {
+                  _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+                },
+              );
             } else {
               _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
             }

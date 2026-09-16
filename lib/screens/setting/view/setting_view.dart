@@ -20,6 +20,7 @@ import 'package:lightroom_template/core/constant/app_lotties_string.dart';
 import 'package:lightroom_template/core/constant/app_string.dart';
 import 'package:lightroom_template/core/utils/app_validations.dart';
 import 'package:lightroom_template/core/utils/common_functions.dart';
+import 'package:lightroom_template/core/utils/native_ad_manager.dart';
 import 'package:lightroom_template/data/helpers/ad_helper.dart';
 import 'package:lightroom_template/data/helpers/preferences_helper.dart';
 import 'package:lightroom_template/routes/app_route_string.dart';
@@ -53,62 +54,73 @@ class _SettingViewState extends State<SettingView> {
             CommonActionButton(
               assetPath: AppImagesString.imgDino,
               onTap: () {
-                final int totalCoin = AppPreferences().getInt(AppPreferences.coin) ?? 0;
-                if (totalCoin < 5) {
-                  CommonBottomSheet.showCommonBottomSheet(
-                    adId: AppAdIdString.settingBottomNativeAd,
-                    context: context,
-                    firstButtonText: AppStrings.txtWatchAd,
-                    title: AppStrings.txtNotEnoughCoinsWatchAnAdToPlay,
-                    firstButtonOnTap: () {
-                      Navigator.of(context).pop();
-                      context.read<SettingBloc>().add(SettingLoadRewardAD());
-                      AdHelper.showRewardedAd(
-                        adUnitId: AppAdIdString.playDinoRewardedAd,
-                        onRewardEarned: () {
-                          context.read<SettingBloc>().add(SettingLoadedRewardAD());
-                          context.read<SettingBloc>().add(SettingStoreCoinEvent());
-                        },
-                        onComplete: () {
-                          context.push(AppRoutesString.dinoView);
-                        },
-                        onAdFailed: () {
-                          context.read<SettingBloc>().add(SettingLoadedRewardAD());
-                        },
-                      );
-                    },
-                  );
-                } else {
-                  CommonBottomSheet.showCommonBottomSheet(
-                    adId: AppAdIdString.settingBottomNativeAd,
-                    context: context,
-                    firstButtonText: "🔓 ${AppStrings.txtFiveLetter} ${AppStrings.txtCoins}",
-                    secondButtonText: AppStrings.txtWatchAd,
-                    title: AppStrings.txtPlayGameReward,
-                    secondButtonOnTap: () {
-                      Navigator.of(context).pop();
-                      context.read<SettingBloc>().add(SettingLoadRewardAD());
-                      AdHelper.showRewardedAd(
-                        adUnitId: AppAdIdString.playDinoRewardedAd,
-                        onRewardEarned: () {
-                          context.read<SettingBloc>().add(SettingLoadedRewardAD());
-                          context.read<SettingBloc>().add(SettingStoreCoinEvent());
-                        },
-                        onComplete: () {
-                          context.push(AppRoutesString.dinoView);
-                        },
-                        onAdFailed: () {
-                          context.read<SettingBloc>().add(SettingLoadedRewardAD());
-                        },
-                      );
-                    },
-      
-                    firstButtonOnTap: () {
-                      context.pop();
-                      context.read<SettingBloc>().add(SettingPlayDinoGame());
-                    },
-                  );
+                CommonDialog.loaderDialog(context: context);
+                bool isSubscribed = AppPreferences().getBool(AppPreferences.subscriptionPlan) ?? false;
+                if (!isSubscribed) {
+                  NativeAdManager().precacheAd(AppAdIdString.settingBottomNativeAd);
                 }
+
+                Future.delayed(const Duration(seconds: 2), () {
+                  if (context.mounted) {
+                    CommonDialog.closeDialog(context: context);
+                    final int totalCoin = AppPreferences().getInt(AppPreferences.coin) ?? 0;
+                    if (totalCoin < 5) {
+                      CommonBottomSheet.showCommonBottomSheet(
+                        adId: AppAdIdString.settingBottomNativeAd,
+                        context: context,
+                        firstButtonText: AppStrings.txtWatchAd,
+                        title: AppStrings.txtNotEnoughCoinsWatchAnAdToPlay,
+                        firstButtonOnTap: () {
+                          Navigator.of(context).pop();
+                          context.read<SettingBloc>().add(SettingLoadRewardAD());
+                          AdHelper.showRewardedAd(
+                            adUnitId: AppAdIdString.playDinoRewardedAd,
+                            onRewardEarned: () {
+                              context.read<SettingBloc>().add(SettingLoadedRewardAD());
+                              context.read<SettingBloc>().add(SettingStoreCoinEvent());
+                            },
+                            onComplete: () {
+                              context.push(AppRoutesString.dinoView);
+                            },
+                            onAdFailed: () {
+                              context.read<SettingBloc>().add(SettingLoadedRewardAD());
+                            },
+                          );
+                        },
+                      );
+                    } else {
+                      CommonBottomSheet.showCommonBottomSheet(
+                        adId: AppAdIdString.settingBottomNativeAd,
+                        context: context,
+                        firstButtonText: "🔓 ${AppStrings.txtFiveLetter} ${AppStrings.txtCoins}",
+                        secondButtonText: AppStrings.txtWatchAd,
+                        title: AppStrings.txtPlayGameReward,
+                        secondButtonOnTap: () {
+                          Navigator.of(context).pop();
+                          context.read<SettingBloc>().add(SettingLoadRewardAD());
+                          AdHelper.showRewardedAd(
+                            adUnitId: AppAdIdString.playDinoRewardedAd,
+                            onRewardEarned: () {
+                              context.read<SettingBloc>().add(SettingLoadedRewardAD());
+                              context.read<SettingBloc>().add(SettingStoreCoinEvent());
+                            },
+                            onComplete: () {
+                              context.push(AppRoutesString.dinoView);
+                            },
+                            onAdFailed: () {
+                              context.read<SettingBloc>().add(SettingLoadedRewardAD());
+                            },
+                          );
+                        },
+
+                        firstButtonOnTap: () {
+                          context.pop();
+                          context.read<SettingBloc>().add(SettingPlayDinoGame());
+                        },
+                      );
+                    }
+                  }
+                });
               },
               imageSize: 45,
               removeDecoration: true,
@@ -151,45 +163,53 @@ class _SettingViewState extends State<SettingView> {
                                   if (AppPreferences().getBool(AppPreferences.instagramFollow) == true) {
                                     await CommonFunction.launchUrlLink(instaLink);
                                   } else {
-                                    CommonDialog.showDialogWidget(
-                                      adId: AppAdIdString.socialMediaNativeAd,
-                                      context: context,
-                                      title: AppStrings.txtJoinOnInstagram,
-                                      childWidget: Form(
-                                        key: context.read<SettingBloc>().formKey,
-                                        child: Column(
-                                          children: [
-                                            CommonTextField(
-                                              controller: context.read<SettingBloc>().instagramUserIdController,
-                                              autoFocus: true,
-                                              hintText: "e.g. username",
-                                              validator: (value) {
-                                                return AppValidations.validateNotEmpty(
-                                                  errorMessage: AppStrings.txtPleaseEnterThisField,
-                                                  inputValue: value ?? '',
-                                                );
-                                              },
+                                    CommonDialog.loaderDialog(context: context);
+                                    NativeAdManager().precacheAd(AppAdIdString.socialMediaNativeAd);
+
+                                    Future.delayed(const Duration(seconds: 2), () {
+                                      if (context.mounted) {
+                                        CommonDialog.closeDialog(context: context);
+                                        CommonDialog.showDialogWidget(
+                                          adId: AppAdIdString.socialMediaNativeAd,
+                                          context: context,
+                                          title: AppStrings.txtJoinOnInstagram,
+                                          childWidget: Form(
+                                            key: context.read<SettingBloc>().formKey,
+                                            child: Column(
+                                              children: [
+                                                CommonTextField(
+                                                  controller: context.read<SettingBloc>().instagramUserIdController,
+                                                  autoFocus: true,
+                                                  hintText: "e.g. username",
+                                                  validator: (value) {
+                                                    return AppValidations.validateNotEmpty(
+                                                      errorMessage: AppStrings.txtPleaseEnterThisField,
+                                                      inputValue: value ?? '',
+                                                    );
+                                                  },
+                                                ),
+                                                SBH5(),
+                                                CommonButton(
+                                                  text: AppStrings.txtSubmitAndEarnFiftyCoin,
+                                                  onTap: () {
+                                                    if (context
+                                                        .read<SettingBloc>()
+                                                        .formKey
+                                                        .currentState!
+                                                        .validate()) {
+                                                      context.pop();
+                                                      context.read<SettingBloc>().add(
+                                                        OnInstagramTelegramFollowEvent(isInstagram: true),
+                                                      );
+                                                    }
+                                                  },
+                                                ),
+                                              ],
                                             ),
-                                            SBH5(),
-                                            CommonButton(
-                                              text: AppStrings.txtSubmitAndEarnFiftyCoin,
-                                              onTap: () {
-                                                if (context
-                                                    .read<SettingBloc>()
-                                                    .formKey
-                                                    .currentState!
-                                                    .validate()) {
-                                                  context.pop();
-                                                  context.read<SettingBloc>().add(
-                                                    OnInstagramTelegramFollowEvent(isInstagram: true),
-                                                  );
-                                                }
-                                              },
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    );
+                                          ),
+                                        );
+                                      }
+                                    });
                                   }
                                 },
                               ),
@@ -204,45 +224,53 @@ class _SettingViewState extends State<SettingView> {
                                   if (AppPreferences().getBool(AppPreferences.joinTelegram) == true) {
                                     await CommonFunction.launchUrlLink(telegramLink);
                                   } else {
-                                    CommonDialog.showDialogWidget(
-                                      adId: AppAdIdString.socialMediaNativeAd,
-                                      context: context,
-                                      title: AppStrings.txtJoinOnTelegram,
-                                      childWidget: Form(
-                                        key: context.read<SettingBloc>().formKey,
-                                        child: Column(
-                                          children: [
-                                            CommonTextField(
-                                              controller: context.read<SettingBloc>().telegramUserIdController,
-                                              autoFocus: true,
-                                              hintText: "e.g. username",
-                                              validator: (value) {
-                                                return AppValidations.validateNotEmpty(
-                                                  errorMessage: AppStrings.txtPleaseEnterThisField,
-                                                  inputValue: value ?? '',
-                                                );
-                                              },
+                                    CommonDialog.loaderDialog(context: context);
+                                    NativeAdManager().precacheAd(AppAdIdString.socialMediaNativeAd);
+
+                                    Future.delayed(const Duration(seconds: 2), () {
+                                      if (context.mounted) {
+                                        CommonDialog.closeDialog(context: context);
+                                        CommonDialog.showDialogWidget(
+                                          adId: AppAdIdString.socialMediaNativeAd,
+                                          context: context,
+                                          title: AppStrings.txtJoinOnTelegram,
+                                          childWidget: Form(
+                                            key: context.read<SettingBloc>().formKey,
+                                            child: Column(
+                                              children: [
+                                                CommonTextField(
+                                                  controller: context.read<SettingBloc>().telegramUserIdController,
+                                                  autoFocus: true,
+                                                  hintText: "e.g. username",
+                                                  validator: (value) {
+                                                    return AppValidations.validateNotEmpty(
+                                                      errorMessage: AppStrings.txtPleaseEnterThisField,
+                                                      inputValue: value ?? '',
+                                                    );
+                                                  },
+                                                ),
+                                                SBH5(),
+                                                CommonButton(
+                                                  onTap: () {
+                                                    if (context
+                                                        .read<SettingBloc>()
+                                                        .formKey
+                                                        .currentState!
+                                                        .validate()) {
+                                                      context.pop();
+                                                      context.read<SettingBloc>().add(
+                                                        OnInstagramTelegramFollowEvent(isInstagram: false),
+                                                      );
+                                                    }
+                                                  },
+                                                  text: AppStrings.txtSubmitAndEarnFiftyCoin,
+                                                ),
+                                              ],
                                             ),
-                                            SBH5(),
-                                            CommonButton(
-                                              onTap: () {
-                                                if (context
-                                                    .read<SettingBloc>()
-                                                    .formKey
-                                                    .currentState!
-                                                    .validate()) {
-                                                  context.pop();
-                                                  context.read<SettingBloc>().add(
-                                                    OnInstagramTelegramFollowEvent(isInstagram: false),
-                                                  );
-                                                }
-                                              },
-                                              text: AppStrings.txtSubmitAndEarnFiftyCoin,
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    );
+                                          ),
+                                        );
+                                      }
+                                    });
                                   }
                                 },
                               ),

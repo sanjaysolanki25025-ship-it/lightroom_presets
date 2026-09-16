@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -23,9 +24,9 @@ import 'package:lightroom_template/data/models/lr_preset_model.dart';
 import 'package:lightroom_template/routes/app_route_string.dart';
 import 'package:lightroom_template/screens/discover/widgets/discover_category_widget.dart';
 import 'package:lightroom_template/common/grid_item_widget.dart';
+import 'package:lightroom_template/core/utils/native_ad_manager.dart';
 import 'package:lightroom_template/screens/favourite/bloc/favourite_bloc.dart';
 import 'package:lightroom_template/screens/home/widgets/common_action_button.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 class FavouriteView extends StatefulWidget {
   const FavouriteView({super.key});
@@ -57,62 +58,80 @@ class _FavouriteViewState extends State<FavouriteView> {
             CommonActionButton(
               assetPath: AppImagesString.imgDino,
               onTap: () {
-                final int totalCoin = AppPreferences().getInt(AppPreferences.coin) ?? 0;
-                if (totalCoin < 5) {
-                  CommonBottomSheet.showCommonBottomSheet(
-                    adId: AppAdIdString.favouriteBottomNativeAd,
-                    context: context,
-                    firstButtonText: AppStrings.txtWatchAd,
-                    title: AppStrings.txtNotEnoughCoinsWatchAnAdToPlay,
-                    firstButtonOnTap: () {
-                      Navigator.of(context).pop();
-                      context.read<FavouriteBloc>().add(LoadRewardADEvent());
-                      AdHelper.showRewardedAd(
-                        adUnitId: AppAdIdString.playDinoRewardedAd,
-                        onRewardEarned: () {
-                          context.read<FavouriteBloc>().add(LoadedRewardADEvent());
-                          context.read<FavouriteBloc>().add(FavouriteStoreCoinEvent());
-                        },
-                        onComplete: () {
-                          context.push(AppRoutesString.dinoView);
-                        },
-                        onAdFailed: () {
-                          context.read<FavouriteBloc>().add(LoadedRewardADEvent());
-                        },
-                      );
-                    },
-                  );
-                } else {
-                  CommonBottomSheet.showCommonBottomSheet(
-                    adId: AppAdIdString.favouriteBottomNativeAd,
-                    context: context,
-                    firstButtonText: "🔓 ${AppStrings.txtFiveLetter} ${AppStrings.txtCoins}",
-                    secondButtonText: AppStrings.txtWatchAd,
-                    title: AppStrings.txtPlayGameReward,
-                    secondButtonOnTap: () {
-                      Navigator.of(context).pop();
-                      context.read<FavouriteBloc>().add(LoadRewardADEvent());
-                      AdHelper.showRewardedAd(
-                        adUnitId: AppAdIdString.playDinoRewardedAd,
-                        onRewardEarned: () {
-                          context.read<FavouriteBloc>().add(LoadedRewardADEvent());
-                          context.read<FavouriteBloc>().add(FavouriteStoreCoinEvent());
-                        },
-                        onComplete: () {
-                          context.push(AppRoutesString.dinoView);
-                        },
-                        onAdFailed: () {
-                          context.read<FavouriteBloc>().add(LoadedRewardADEvent());
-                        },
-                      );
-                    },
-      
-                    firstButtonOnTap: () {
-                      context.pop();
-                      context.read<FavouriteBloc>().add(FavouritePlayDinoGame());
-                    },
-                  );
+                CommonDialog.loaderDialog(context: context);
+                bool isSubscribed = AppPreferences().getBool(AppPreferences.subscriptionPlan) ?? false;
+                if (!isSubscribed) {
+                  NativeAdManager().precacheAd(AppAdIdString.favouriteBottomNativeAd);
                 }
+
+                Future.delayed(const Duration(seconds: 2), () {
+                  if (context.mounted) {
+                    CommonDialog.closeDialog(context: context);
+                    final int totalCoin = AppPreferences().getInt(AppPreferences.coin) ?? 0;
+
+                    if (totalCoin < 5) {
+                      CommonBottomSheet.showCommonBottomSheet(
+                        adId: AppAdIdString.favouriteBottomNativeAd,
+                        context: context,
+                        firstButtonText: AppStrings.txtWatchAd,
+                        title: AppStrings.txtNotEnoughCoinsWatchAnAdToPlay,
+                        firstButtonOnTap: () {
+                          Navigator.of(context).pop();
+
+                          context.read<FavouriteBloc>().add(LoadRewardADEvent());
+
+                          AdHelper.showRewardedAd(
+                            adUnitId: AppAdIdString.playDinoRewardedAd,
+                            onRewardEarned: () {
+                              context.read<FavouriteBloc>().add(LoadedRewardADEvent());
+
+                              context.read<FavouriteBloc>().add(FavouriteStoreCoinEvent());
+                            },
+                            onComplete: () {
+                              context.push(AppRoutesString.dinoView);
+                            },
+                            onAdFailed: () {
+                              context.read<FavouriteBloc>().add(LoadedRewardADEvent());
+                            },
+                          );
+                        },
+                      );
+                    } else {
+                      CommonBottomSheet.showCommonBottomSheet(
+                        adId: AppAdIdString.favouriteBottomNativeAd,
+                        context: context,
+                        firstButtonText: "🔓 ${AppStrings.txtFiveLetter} ${AppStrings.txtCoins}",
+                        secondButtonText: AppStrings.txtWatchAd,
+                        title: AppStrings.txtPlayGameReward,
+                        secondButtonOnTap: () {
+                          Navigator.of(context).pop();
+
+                          context.read<FavouriteBloc>().add(LoadRewardADEvent());
+
+                          AdHelper.showRewardedAd(
+                            adUnitId: AppAdIdString.playDinoRewardedAd,
+                            onRewardEarned: () {
+                              context.read<FavouriteBloc>().add(LoadedRewardADEvent());
+
+                              context.read<FavouriteBloc>().add(FavouriteStoreCoinEvent());
+                            },
+                            onComplete: () {
+                              context.push(AppRoutesString.dinoView);
+                            },
+                            onAdFailed: () {
+                              context.read<FavouriteBloc>().add(LoadedRewardADEvent());
+                            },
+                          );
+                        },
+                        firstButtonOnTap: () {
+                          context.pop();
+
+                          context.read<FavouriteBloc>().add(FavouritePlayDinoGame());
+                        },
+                      );
+                    }
+                  }
+                });
               },
               imageSize: 45,
               removeDecoration: true,
@@ -147,41 +166,49 @@ class _FavouriteViewState extends State<FavouriteView> {
                           separatorBuilder: (_, _) => const SizedBox(width: 10),
                           itemBuilder: (context, index) {
                             final cat = state.categories[index];
-                             return DiscoverCategoryWidget(
+
+                            return DiscoverCategoryWidget(
                               label: cat,
                               isSelected: state.selectedCategoryIndex == index,
-                               onTap: () {
-                                 int tapCount = AppPreferences().getInt(AppPreferences.categoryTap) ?? 0;
-                                 tapCount++;
-                                 AppPreferences().setInt(AppPreferences.categoryTap, tapCount);
-      
-                                 context.read<FavouriteBloc>().add(ChangeFavouriteCategoryEvent(index: index));
-      
+                              onTap: () {
+                                int tapCount = AppPreferences().getInt(AppPreferences.categoryTap) ?? 0;
+
+                                tapCount++;
+
+                                AppPreferences().setInt(AppPreferences.categoryTap, tapCount);
+
+                                context.read<FavouriteBloc>().add(ChangeFavouriteCategoryEvent(index: index));
+
                                 final showAd = tapCount % 3 == 0;
+
                                 if (showAd) {
-                                 if (!AdHelper.isCategoryAdLoadingOrShowing) {
-                                   AdHelper.isCategoryAdLoadingOrShowing = true;
-                                   AdHelper.showInterstitialAd(
-                                     adUnitId: AppAdIdString.categoryOnTapInterstitialAd,
-                                     onComplete: () {
-                                       AdHelper.isCategoryAdLoadingOrShowing = false;
-                                     },
-                                   );
-                                 }
+                                  if (!AdHelper.isCategoryAdLoadingOrShowing) {
+                                    AdHelper.isCategoryAdLoadingOrShowing = true;
+
+                                    AdHelper.instantShowInterstitialAd(
+                                      adUnitId: AppAdIdString.categoryOnTapInterstitialAd,
+                                      onAdClosed: () {
+                                        AdHelper.isCategoryAdLoadingOrShowing = false;
+                                      },
+                                    );
+                                  }
                                 }
-                               },
+                              },
                             );
                           },
                         ),
                       ),
                     ),
+
                   BannerAdWidget(adId: AppAdIdString.favouriteBannerAd),
+
                   SBH2(),
+
                   Expanded(
                     child: CustomScrollView(
                       slivers: [
                         const SliverToBoxAdapter(child: SBH10()),
-      
+
                         if (state.status == FavouriteStatus.loading && state.presents.isEmpty)
                           SliverFillRemaining(
                             hasScrollBody: false,
@@ -215,7 +242,9 @@ class _FavouriteViewState extends State<FavouriteView> {
                                                 fontWeight: FontWeight.bold,
                                               ),
                                             ),
+
                                             SBH5(),
+
                                             BlocProvider(
                                               create: (context) => NativeAdBloc(),
                                               child: NativeAdView(
@@ -232,11 +261,13 @@ class _FavouriteViewState extends State<FavouriteView> {
                                 : SliverList(
                                     delegate: SliverChildBuilderDelegate((context, row) {
                                       final firstIndex = row * 2;
+
                                       if (firstIndex >= state.presents.length) {
                                         return const SizedBox.shrink();
                                       }
-      
+
                                       final fav1 = state.presents[firstIndex];
+
                                       final entry1 = LrPresetModel(
                                         categories: fav1.category.split(',').map((e) => e.trim()).toList(),
                                         coin: int.tryParse(fav1.coin) ?? 0,
@@ -247,10 +278,12 @@ class _FavouriteViewState extends State<FavouriteView> {
                                         title: fav1.title,
                                         isFavourite: true,
                                       );
-      
+
                                       LrPresetModel? entry2;
+
                                       if (firstIndex + 1 < state.presents.length) {
                                         final fav2 = state.presents[firstIndex + 1];
+
                                         entry2 = LrPresetModel(
                                           categories: fav2.category.split(',').map((e) => e.trim()).toList(),
                                           coin: int.tryParse(fav2.coin) ?? 0,
@@ -262,81 +295,116 @@ class _FavouriteViewState extends State<FavouriteView> {
                                           isFavourite: true,
                                         );
                                       }
-      
+
                                       return Column(
                                         children: [
                                           Row(
                                             children: [
                                               Expanded(
                                                 child: GestureDetector(
-                                                  onTap: () async {
-                                                    AdHelper.cancelLoadMoreAd = true;
-                                                    final bool? result = await context.push<bool>(
-                                                      AppRoutesString.templateDetailView,
-                                                      extra: entry1,
-                                                    );
-      
-                                                     if (result == true) {
-                                                       if ((AppPreferences().getInt(
-                                                                 AppPreferences.onBackPress,
-                                                               ) ??
-                                                               0) >
-                                                           1) {
-                                                          AppPreferences().setInt(
-                                                            AppPreferences.onBackPress,
-                                                            0,
-                                                          );
-                                                          if (!AdHelper.isBackButtonAdLoadingOrShowing) {
-                                                            AdHelper.isBackButtonAdLoadingOrShowing = true;
-                                                            AdHelper.showInterstitialAd(
-                                                              adUnitId: AppAdIdString.backButtonInterstitialAd,
-                                                              onComplete: () {
-                                                                AdHelper.isBackButtonAdLoadingOrShowing = false;
-                                                              },
-                                                            );
+                                                  onTap: () {
+                                                    CommonDialog.loaderDialog(context: context);
+
+                                                    bool isSubscribed =
+                                                        AppPreferences().getBool(AppPreferences.subscriptionPlan) ??
+                                                        false;
+
+                                                    if (!isSubscribed) {
+                                                      NativeAdManager().precacheAd(AppAdIdString.presetDetailNativeAd);
+                                                    }
+
+                                                    Future.delayed(const Duration(seconds: 2), () async {
+                                                      if (context.mounted) {
+                                                        CommonDialog.closeDialog(context: context);
+
+                                                        AdHelper.cancelLoadMoreAd = true;
+
+                                                        final bool? result = await context.push<bool>(
+                                                          AppRoutesString.templateDetailView,
+                                                          extra: entry1,
+                                                        );
+
+                                                        if (result == true) {
+                                                          if ((AppPreferences().getInt(AppPreferences.onBackPress) ??
+                                                                  0) >
+                                                              1) {
+                                                            AppPreferences().setInt(AppPreferences.onBackPress, 0);
+
+                                                            if (!AdHelper.isBackButtonAdLoadingOrShowing) {
+                                                              AdHelper.isBackButtonAdLoadingOrShowing = true;
+
+                                                              AdHelper.instantShowInterstitialAd(
+                                                                adUnitId: AppAdIdString.backButtonInterstitialAd,
+                                                                onAdClosed: () {
+                                                                  AdHelper.isBackButtonAdLoadingOrShowing = false;
+                                                                },
+                                                              );
+                                                            }
                                                           }
-                                                       }
-                                                     }
+                                                        }
+                                                      }
+                                                    });
                                                   },
                                                   child: GridItemWidget(
                                                     entry: entry1,
                                                     onFavourite: () {
                                                       context.read<FavouriteBloc>().add(
-                                                        RemoveFavouriteEvent(
-                                                          index: firstIndex,
-                                                          presentId: entry1.id,
-                                                        ),
+                                                        RemoveFavouriteEvent(index: firstIndex, presentId: entry1.id),
                                                       );
                                                     },
                                                   ),
                                                 ),
                                               ),
-      
+
                                               SBW15(),
-      
+
                                               if (entry2 != null)
                                                 Expanded(
                                                   child: GestureDetector(
-                                                    onTap: () async {
-                                                      AdHelper.cancelLoadMoreAd = true;
-                                                      final bool? result = await context.push<bool>(
-                                                        AppRoutesString.templateDetailView,
-                                                        extra: entry2,
-                                                      );
-                                                      if (result == true) {
-                                                        if ((AppPreferences().getInt(AppPreferences.onBackPress) ?? 0) > 1) {
-                                                          AppPreferences().setInt(AppPreferences.onBackPress, 0);
-                                                          if (!AdHelper.isBackButtonAdLoadingOrShowing) {
-                                                            AdHelper.isBackButtonAdLoadingOrShowing = true;
-                                                            AdHelper.showInterstitialAd(
-                                                              adUnitId: AppAdIdString.backButtonInterstitialAd,
-                                                              onComplete: () {
-                                                                AdHelper.isBackButtonAdLoadingOrShowing = false;
-                                                              },
-                                                            );
+                                                    onTap: () {
+                                                      CommonDialog.loaderDialog(context: context);
+
+                                                      bool isSubscribed =
+                                                          AppPreferences().getBool(AppPreferences.subscriptionPlan) ??
+                                                          false;
+
+                                                      if (!isSubscribed) {
+                                                        NativeAdManager().precacheAd(
+                                                          AppAdIdString.presetDetailNativeAd,
+                                                        );
+                                                      }
+
+                                                      Future.delayed(const Duration(seconds: 2), () async {
+                                                        if (context.mounted) {
+                                                          CommonDialog.closeDialog(context: context);
+
+                                                          AdHelper.cancelLoadMoreAd = true;
+
+                                                          final bool? result = await context.push<bool>(
+                                                            AppRoutesString.templateDetailView,
+                                                            extra: entry2,
+                                                          );
+
+                                                          if (result == true) {
+                                                            if ((AppPreferences().getInt(AppPreferences.onBackPress) ??
+                                                                    0) >
+                                                                1) {
+                                                              AppPreferences().setInt(AppPreferences.onBackPress, 0);
+
+                                                              if (!AdHelper.isBackButtonAdLoadingOrShowing) {
+                                                                AdHelper.isBackButtonAdLoadingOrShowing = true;
+
+                                                                AdHelper.instantShowInterstitialAd(
+                                                                  adUnitId: AppAdIdString.backButtonInterstitialAd,
+                                                                  onAdClosed: () {
+                                                                    AdHelper.isBackButtonAdLoadingOrShowing = false;
+                                                                  },
+                                                                );
+                                                              }
+                                                            }
                                                           }
                                                         }
-                                                      }
+                                                      });
                                                     },
                                                     child: GridItemWidget(
                                                       entry: entry2,
@@ -355,9 +423,9 @@ class _FavouriteViewState extends State<FavouriteView> {
                                                 const Expanded(child: SizedBox()),
                                             ],
                                           ),
-      
+
                                           SBH15(),
-      
+
                                           if (shouldShowAd(row))
                                             Padding(
                                               padding: const EdgeInsets.only(bottom: 16),
@@ -371,6 +439,7 @@ class _FavouriteViewState extends State<FavouriteView> {
                                     }, childCount: (state.presents.length / 2).ceil()),
                                   ),
                           ),
+
                           const SliverToBoxAdapter(child: SBH100()),
                         ],
                       ],

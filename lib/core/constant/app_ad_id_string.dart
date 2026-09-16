@@ -5,7 +5,7 @@ class AppAdIdString {
     return Platform.isAndroid ? true : false;
   }
 
-  /// -------------------- Test Ad Id ------------------------
+  // /// -------------------- Test Ad Id ------------------------
   // /// ======= app open ad ==========
   // static final String appOpen = _isAndroid
   //     ? 'ca-app-pub-3940256099942544/9257395921'
@@ -25,6 +25,21 @@ class AppAdIdString {
   //
   // // load more  interstitial ad
   // static final String loadMoreInterstitialAd = _isAndroid
+  //     ? 'ca-app-pub-3940256099942544/1033173712'
+  //     : 'ca-app-pub-3940256099942544/4411468910';
+  //
+  // // category on tap interstitial ad
+  // static final String categoryOnTapInterstitialAd = _isAndroid
+  //     ? 'ca-app-pub-3940256099942544/1033173712'
+  //     : 'ca-app-pub-3940256099942544/4411468910';
+  //
+  // // onboarding 1 interstitial ad
+  // static final String onboarding1InterstitialAd = _isAndroid
+  //     ? 'ca-app-pub-3940256099942544/1033173712'
+  //     : 'ca-app-pub-3940256099942544/4411468910';
+  //
+  // // splash interstitial
+  // static final String splashInterstitialAd = _isAndroid
   //     ? 'ca-app-pub-3940256099942544/1033173712'
   //     : 'ca-app-pub-3940256099942544/4411468910';
   //
@@ -92,6 +107,11 @@ class AppAdIdString {
   //     ? 'ca-app-pub-3940256099942544/2247696110'
   //     : 'ca-app-pub-3940256099942544/3986624511';
   //
+  // // onboarding full screen ad
+  // static final String onBoardingFullScreenAd = _isAndroid
+  //     ? 'ca-app-pub-3940256099942544/2247696110'
+  //     : 'ca-app-pub-3940256099942544/3986624511';
+  //
   // // maintenance native ad
   // static final String maintenanceNativeAd = _isAndroid
   //     ? 'ca-app-pub-3940256099942544/2247696110'
@@ -137,6 +157,11 @@ class AppAdIdString {
   //     ? 'ca-app-pub-3940256099942544/2247696110'
   //     : 'ca-app-pub-3940256099942544/3986624511';
   //
+  // // dino game restart rewarded ad
+  // static final String dinoGameRestart = _isAndroid
+  //     ? 'ca-app-pub-3940256099942544/2247696110'
+  //     : 'ca-app-pub-3940256099942544/3986624511';
+  //
   // // splash screen native Ad
   // static final String splashNativeAd = _isAndroid
   //     ? 'ca-app-pub-3940256099942544/2247696110'
@@ -173,6 +198,12 @@ class AppAdIdString {
   static final String appOpen = _isAndroid ? 'ca-app-pub-1234444627237787/6733209129' : '';
 
   /// ========== interstitial ad ==========
+  // splash interstitial
+  static final String splashInterstitialAd = _isAndroid ? 'ca-app-pub-1234444627237787/1689500465' : '';
+
+  // onboarding 1 interstitial ad
+  static final String onboarding1InterstitialAd = _isAndroid ? '  ca-app-pub-1234444627237787/9903866558' : '';
+
   // back button interstitial ad
   static final String backButtonInterstitialAd = _isAndroid ? 'ca-app-pub-1234444627237787/9658755368' : '';
 

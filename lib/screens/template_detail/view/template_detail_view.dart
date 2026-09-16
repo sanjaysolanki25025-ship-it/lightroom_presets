@@ -23,6 +23,7 @@ import 'package:lightroom_template/core/utils/app_text_style.dart';
 import 'package:lightroom_template/core/utils/common_functions.dart';
 import 'package:lightroom_template/data/helpers/ad_helper.dart';
 import 'package:lightroom_template/data/helpers/preferences_helper.dart';
+import 'package:lightroom_template/core/utils/native_ad_manager.dart';
 import 'package:lightroom_template/data/models/lr_preset_model.dart';
 import 'package:lightroom_template/routes/app_route_string.dart';
 import 'package:lightroom_template/screens/home/widgets/common_action_button.dart';
@@ -66,63 +67,74 @@ class _TemplateDetailViewState extends State<TemplateDetailView> {
               CommonActionButton(
                 assetPath: AppImagesString.imgDino,
                 onTap: () {
-                  final int totalCoin = AppPreferences().getInt(AppPreferences.coin) ?? 0;
-                  if (totalCoin < 5) {
-                    CommonBottomSheet.showCommonBottomSheet(
-                      adId: AppAdIdString.presetDetailBottomNativeAd,
-                      context: context,
-                      firstButtonText: AppStrings.txtWatchAd,
-                      title: AppStrings.txtNotEnoughCoinsWatchAnAdToPlay,
-                      firstButtonOnTap: () {
-                        Navigator.of(context).pop();
-                        context.read<TemplateDetailBloc>().add(TemplateDetailLoadRewardAD());
-                        AdHelper.showRewardedAd(
-                          adUnitId: AppAdIdString.playDinoRewardedAd,
-                          onRewardEarned: () {
-                            context.read<TemplateDetailBloc>().add(TemplateDetailLoadedRewardAD());
-                            ;
-                            context.read<TemplateDetailBloc>().add(TemplateDetailStoreCoinEvent());
-                          },
-                          onComplete: () {
-                            context.push(AppRoutesString.dinoView);
-                          },
-                          onAdFailed: () {
-                            context.read<TemplateDetailBloc>().add(TemplateDetailLoadedRewardAD());
-                          },
-                        );
-                      },
-                    );
-                  } else {
-                    CommonBottomSheet.showCommonBottomSheet(
-                      adId: AppAdIdString.presetDetailBottomNativeAd,
-                      context: context,
-                      firstButtonText: "🔓 ${AppStrings.txtFiveLetter} ${AppStrings.txtCoins}",
-                      secondButtonText: AppStrings.txtWatchAd,
-                      title: AppStrings.txtPlayGameReward,
-                      secondButtonOnTap: () {
-                        Navigator.of(context).pop();
-                        context.read<TemplateDetailBloc>().add(TemplateDetailLoadRewardAD());
-                        AdHelper.showRewardedAd(
-                          adUnitId: AppAdIdString.playDinoRewardedAd,
-                          onRewardEarned: () {
-                            context.read<TemplateDetailBloc>().add(TemplateDetailLoadedRewardAD());
-                            context.read<TemplateDetailBloc>().add(TemplateDetailStoreCoinEvent());
-                          },
-                          onComplete: () {
-                            context.push(AppRoutesString.dinoView);
-                          },
-                          onAdFailed: () {
-                            context.read<TemplateDetailBloc>().add(TemplateDetailLoadedRewardAD());
-                          },
-                        );
-                      },
-
-                      firstButtonOnTap: () {
-                        context.pop();
-                        context.read<TemplateDetailBloc>().add(TemplateDetailPlayDinoGame());
-                      },
-                    );
+                  CommonDialog.loaderDialog(context: context);
+                  bool isSubscribed = AppPreferences().getBool(AppPreferences.subscriptionPlan) ?? false;
+                  if (!isSubscribed) {
+                    NativeAdManager().precacheAd(AppAdIdString.presetDetailBottomNativeAd);
                   }
+
+                  Future.delayed(const Duration(seconds: 2), () {
+                    if (context.mounted) {
+                      CommonDialog.closeDialog(context: context);
+
+                      final int totalCoin = AppPreferences().getInt(AppPreferences.coin) ?? 0;
+                      if (totalCoin < 5) {
+                        CommonBottomSheet.showCommonBottomSheet(
+                          adId: AppAdIdString.presetDetailBottomNativeAd,
+                          context: context,
+                          firstButtonText: AppStrings.txtWatchAd,
+                          title: AppStrings.txtNotEnoughCoinsWatchAnAdToPlay,
+                          firstButtonOnTap: () {
+                            Navigator.of(context).pop();
+                            context.read<TemplateDetailBloc>().add(TemplateDetailLoadRewardAD());
+                            AdHelper.showRewardedAd(
+                              adUnitId: AppAdIdString.playDinoRewardedAd,
+                              onRewardEarned: () {
+                                context.read<TemplateDetailBloc>().add(TemplateDetailLoadedRewardAD());
+                                context.read<TemplateDetailBloc>().add(TemplateDetailStoreCoinEvent());
+                              },
+                              onComplete: () {
+                                context.push(AppRoutesString.dinoView);
+                              },
+                              onAdFailed: () {
+                                context.read<TemplateDetailBloc>().add(TemplateDetailLoadedRewardAD());
+                              },
+                            );
+                          },
+                        );
+                      } else {
+                        CommonBottomSheet.showCommonBottomSheet(
+                          adId: AppAdIdString.presetDetailBottomNativeAd,
+                          context: context,
+                          firstButtonText: "🔓 ${AppStrings.txtFiveLetter} ${AppStrings.txtCoins}",
+                          secondButtonText: AppStrings.txtWatchAd,
+                          title: AppStrings.txtPlayGameReward,
+                          secondButtonOnTap: () {
+                            Navigator.of(context).pop();
+                            context.read<TemplateDetailBloc>().add(TemplateDetailLoadRewardAD());
+                            AdHelper.showRewardedAd(
+                              adUnitId: AppAdIdString.playDinoRewardedAd,
+                              onRewardEarned: () {
+                                context.read<TemplateDetailBloc>().add(TemplateDetailLoadedRewardAD());
+                                context.read<TemplateDetailBloc>().add(TemplateDetailStoreCoinEvent());
+                              },
+                              onComplete: () {
+                                context.push(AppRoutesString.dinoView);
+                              },
+                              onAdFailed: () {
+                                context.read<TemplateDetailBloc>().add(TemplateDetailLoadedRewardAD());
+                              },
+                            );
+                          },
+
+                          firstButtonOnTap: () {
+                            context.pop();
+                            context.read<TemplateDetailBloc>().add(TemplateDetailPlayDinoGame());
+                          },
+                        );
+                      }
+                    }
+                  });
                 },
                 imageSize: 45,
                 removeDecoration: true,
@@ -306,9 +318,20 @@ class _TemplateDetailViewState extends State<TemplateDetailView> {
                           fontWeight: FontWeight.w700,
                         ),
                         onTap: () {
-                          context.read<TemplateDetailBloc>().add(
-                            TemplateDetailCheckLightroomInstallation(entry: widget.entry),
-                          );
+                          CommonDialog.loaderDialog(context: context);
+                          bool isSubscribed = AppPreferences().getBool(AppPreferences.subscriptionPlan) ?? false;
+                          if (!isSubscribed) {
+                            NativeAdManager().precacheAd(AppAdIdString.presetDetailBottomNativeAd);
+                          }
+
+                          Future.delayed(const Duration(seconds: 2), () {
+                            if (context.mounted) {
+                              CommonDialog.closeDialog(context: context);
+                              context.read<TemplateDetailBloc>().add(
+                                TemplateDetailCheckLightroomInstallation(entry: widget.entry),
+                              );
+                            }
+                          });
                         },
                         text: AppStrings.txtUseInLightroom,
                       ),
@@ -318,11 +341,20 @@ class _TemplateDetailViewState extends State<TemplateDetailView> {
                       child: CommonButton(
                         width: 1.5,
                         onTap: () {
-                          final userCoins = AppPreferences().getInt(AppPreferences.coin) ?? 0;
+                          CommonDialog.loaderDialog(context: context);
+                          bool isSubscribed = AppPreferences().getBool(AppPreferences.subscriptionPlan) ?? false;
+                          if (!isSubscribed) {
+                            NativeAdManager().precacheAd(AppAdIdString.presetDetailBottomNativeAd);
+                          }
 
-                          final hasEnoughCoins = userCoins >= widget.entry.coin;
+                          Future.delayed(const Duration(seconds: 2), () {
+                            if (context.mounted) {
+                              CommonDialog.closeDialog(context: context);
+                              final userCoins = AppPreferences().getInt(AppPreferences.coin) ?? 0;
 
-                          CommonBottomSheet.showCommonBottomSheet(
+                              final hasEnoughCoins = userCoins >= widget.entry.coin;
+
+                              CommonBottomSheet.showCommonBottomSheet(
                             adId: AppAdIdString.presetDetailBottomNativeAd,
                             context: context,
 
@@ -395,6 +427,8 @@ class _TemplateDetailViewState extends State<TemplateDetailView> {
                               }
                             },
                           );
+                            }
+                          });
                         },
                         text: AppStrings.txtDownload,
                         borderColor: AppColors.offBlackColor,

@@ -5,6 +5,7 @@ import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:lightroom_template/core/constant/app_ad_id_string.dart';
 import 'package:lightroom_template/data/helpers/preferences_helper.dart';
+import 'package:lightroom_template/data/helpers/db_helper.dart';
 
 class AdCacheConfig {
   final int cacheSize;
@@ -159,9 +160,13 @@ class NativeAdManager {
   // -------------------------------------------------------
   // INIT
   // -------------------------------------------------------
-  void init() {
+  Future<void> init() async {
     final onboarding = AppPreferences().getBool(AppPreferences.onboarding) ?? false;
     final isMaintenance = FirebaseRemoteConfig.instance.getBool("isMaintenance");
+    
+    // Check if favourite data exists for noDataFoundNativeAd condition
+    final favouriteData = await DbHelper().getFavourites();
+    final isFavouriteDataEmpty = favouriteData.isEmpty;
     for (final entry in _configs.entries) {
       final adId = entry.key;
 
@@ -179,6 +184,23 @@ class NativeAdManager {
         continue;
       }
 
+      if (adId == AppAdIdString.homeBottomNativeAd ||
+          adId == AppAdIdString.discoverBottomNativeAd ||
+          adId == AppAdIdString.presetDetailNativeAd ||
+          adId == AppAdIdString.presetDetailBottomNativeAd ||
+          adId == AppAdIdString.favouriteBottomNativeAd ||
+          adId == AppAdIdString.settingBottomNativeAd ||
+          adId == AppAdIdString.socialMediaNativeAd ||
+          adId == AppAdIdString.rateUsNativeAd) {
+        log('SKIP INITIAL PRE-CACHE | ${entry.value.adName} | $adId | Managed manually.');
+        continue;
+      }
+
+      if (adId == AppAdIdString.noDataFoundNativeAd && !isFavouriteDataEmpty) {
+        log('SKIP INITIAL PRE-CACHE | ${entry.value.adName} | $adId | Favourite data exists.');
+        continue;
+      }
+
       final cache = _cachedAds[adId] ?? [];
       final loading = _isLoading[adId] ?? false;
 
@@ -191,6 +213,11 @@ class NativeAdManager {
   // -------------------------------------------------------
   // LOAD ADS
   // -------------------------------------------------------
+  void precacheAd(String adId) {
+    if (_configs.containsKey(adId)) {
+      _loadBatchForAd(adId);
+    }
+  }
   void _loadBatchForAd(String adId) async {
     final config = _configs[adId];
     if (config == null) return;

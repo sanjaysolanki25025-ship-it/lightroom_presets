@@ -25,6 +25,7 @@ import 'package:lightroom_template/screens/home/bloc/home_state.dart';
 import 'package:lightroom_template/screens/home/widgets/home_category_list.dart';
 import 'package:lightroom_template/screens/home/widgets/reel_item_widget.dart';
 import 'package:lightroom_template/core/utils/in_app_update_manager.dart';
+import 'package:lightroom_template/core/utils/native_ad_manager.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -389,136 +390,171 @@ class _HomeViewState extends State<HomeView> {
                             }
                           },
                           onOpenDinoGame: () {
-                            final int totalCoin = AppPreferences().getInt(AppPreferences.coin) ?? 0;
-                            if (totalCoin < 5) {
-                              CommonBottomSheet.showCommonBottomSheet(
-                                adId: AppAdIdString.homeBottomNativeAd,
-                                context: context,
-                                firstButtonText: AppStrings.txtWatchAd,
-                                title: AppStrings.txtNotEnoughCoinsWatchAnAdToPlay,
-                                firstButtonOnTap: () {
-                                  Navigator.of(context).pop();
-                                  context.read<HomeBloc>().add(LoadRewardAD());
-                                  AdHelper.showRewardedAd(
-                                    adUnitId: AppAdIdString.playDinoRewardedAd,
-                                    onRewardEarned: () {
-                                      context.read<HomeBloc>().add(LoadedRewardAD());
-                                      context.read<HomeBloc>().add(StoreCoinEvent());
-                                    },
-                                    onComplete: () {
-                                      context.push(AppRoutesString.dinoView).then((_) {
-                                        if (context.mounted) {
-                                          context.read<HomeBloc>().add(ResetHomeStatus());
-                                        }
-                                      });
-                                    },
-                                    onAdFailed: () {
-                                      context.read<HomeBloc>().add(LoadedRewardAD());
-                                    },
-                                  );
-                                },
-                              );
-                            } else {
-                              CommonBottomSheet.showCommonBottomSheet(
-                                adId: AppAdIdString.homeBottomNativeAd,
-                                context: context,
-                                firstButtonText: "🔓 ${AppStrings.txtFiveLetter} ${AppStrings.txtCoins}",
-                                secondButtonText: AppStrings.txtWatchAd,
-                                title: AppStrings.txtPlayGameReward,
-                                secondButtonOnTap: () {
-                                  Navigator.of(context).pop();
-                                  context.read<HomeBloc>().add(LoadRewardAD());
-                                  AdHelper.showRewardedAd(
-                                    adUnitId: AppAdIdString.playDinoRewardedAd,
-                                    onRewardEarned: () {
-                                      context.read<HomeBloc>().add(LoadedRewardAD());
-                                      context.read<HomeBloc>().add(StoreCoinEvent());
-                                    },
-                                    onComplete: () {
-                                      context.push(AppRoutesString.dinoView).then((_) {
-                                        if (context.mounted) {
-                                          context.read<HomeBloc>().add(ResetHomeStatus());
-                                        }
-                                      });
-                                    },
-                                    onAdFailed: () {
-                                      context.read<HomeBloc>().add(LoadedRewardAD());
-                                    },
-                                  );
-                                },
-                                firstButtonOnTap: () {
-                                  context.pop();
-                                  context.read<HomeBloc>().add(PlayDinoGame());
-                                },
-                              );
+                            CommonDialog.loaderDialog(context: context);
+                            bool isSubscribed = AppPreferences().getBool(AppPreferences.subscriptionPlan) ?? false;
+                            if (!isSubscribed) {
+                              NativeAdManager().precacheAd(AppAdIdString.homeBottomNativeAd);
                             }
-                          },
-                          onDownloadTap: () {
-                            final userCoins = AppPreferences().getInt(AppPreferences.coin) ?? 0;
-                            final hasEnoughCoins = userCoins >= entry.coin;
-
-                            CommonBottomSheet.showCommonBottomSheet(
-                              adId: AppAdIdString.homeBottomNativeAd,
-                              context: context,
-                              firstButtonText: (entry.coin <= 0)
-                                  ? AppStrings.txtWatchAd
-                                  : hasEnoughCoins
-                                  ? "🔓 ${entry.coin} ${AppStrings.txtCoins}"
-                                  : AppStrings.txtPlayGameEarnCoins,
-                              secondButtonText: AppStrings.txtCancel,
-                              title: (entry.coin <= 0)
-                                  ? AppStrings.txtUnlockThisPresetEarnTwoCoins
-                                  : hasEnoughCoins
-                                  ? AppStrings.txtUnlockThisPreset
-                                  : AppStrings.txtNotEnoughCoins,
-                              secondButtonOnTap: () {
-                                Navigator.of(context).pop();
-                              },
-                              firstButtonOnTap: () {
-                                Navigator.of(context).pop();
-                                if (entry.coin <= 0) {
-                                  context.read<HomeBloc>().add(LoadRewardAD());
-                                  AdHelper.showRewardedAd(
-                                    adUnitId: AppAdIdString.downloadImageRewardedAd,
-                                    onRewardEarned: () {
-                                      context.read<HomeBloc>().add(LoadedRewardAD());
-                                      context.read<HomeBloc>().add(StoreCoinEvent());
-                                      _handleDownload(entry);
-                                    },
-                                    onComplete: () {},
-                                    onAdFailed: () {
-                                      context.read<HomeBloc>().add(LoadedRewardAD());
-                                      _handleDownload(entry);
+                            
+                            Future.delayed(const Duration(seconds: 2), () {
+                              if (context.mounted) {
+                                CommonDialog.closeDialog(context: context);
+                                final int totalCoin = AppPreferences().getInt(AppPreferences.coin) ?? 0;
+                                if (totalCoin < 5) {
+                                  CommonBottomSheet.showCommonBottomSheet(
+                                    adId: AppAdIdString.homeBottomNativeAd,
+                                    context: context,
+                                    firstButtonText: AppStrings.txtWatchAd,
+                                    title: AppStrings.txtNotEnoughCoinsWatchAnAdToPlay,
+                                    firstButtonOnTap: () {
+                                      Navigator.of(context).pop();
+                                      context.read<HomeBloc>().add(LoadRewardAD());
+                                      AdHelper.showRewardedAd(
+                                        adUnitId: AppAdIdString.playDinoRewardedAd,
+                                        onRewardEarned: () {
+                                          context.read<HomeBloc>().add(LoadedRewardAD());
+                                          context.read<HomeBloc>().add(StoreCoinEvent());
+                                        },
+                                        onComplete: () {
+                                          context.push(AppRoutesString.dinoView).then((_) {
+                                            if (context.mounted) {
+                                              context.read<HomeBloc>().add(ResetHomeStatus());
+                                            }
+                                          });
+                                        },
+                                        onAdFailed: () {
+                                          context.read<HomeBloc>().add(LoadedRewardAD());
+                                        },
+                                      );
                                     },
                                   );
-                                } else if (hasEnoughCoins) {
-                                  context.read<HomeBloc>().add(UsedCoin(coin: entry.coin));
-                                  _handleDownload(entry);
                                 } else {
-                                  context.read<HomeBloc>().add(LoadRewardAD());
-                                  AdHelper.showRewardedAd(
-                                    adUnitId: AppAdIdString.playDinoRewardedAd,
-                                    onRewardEarned: () {
-                                      context.read<HomeBloc>().add(LoadedRewardAD());
-                                      context.read<HomeBloc>().add(StoreCoinEvent());
+                                  CommonBottomSheet.showCommonBottomSheet(
+                                    adId: AppAdIdString.homeBottomNativeAd,
+                                    context: context,
+                                    firstButtonText: "🔓 ${AppStrings.txtFiveLetter} ${AppStrings.txtCoins}",
+                                    secondButtonText: AppStrings.txtWatchAd,
+                                    title: AppStrings.txtPlayGameReward,
+                                    secondButtonOnTap: () {
+                                      Navigator.of(context).pop();
+                                      context.read<HomeBloc>().add(LoadRewardAD());
+                                      AdHelper.showRewardedAd(
+                                        adUnitId: AppAdIdString.playDinoRewardedAd,
+                                        onRewardEarned: () {
+                                          context.read<HomeBloc>().add(LoadedRewardAD());
+                                          context.read<HomeBloc>().add(StoreCoinEvent());
+                                        },
+                                        onComplete: () {
+                                          context.push(AppRoutesString.dinoView).then((_) {
+                                            if (context.mounted) {
+                                              context.read<HomeBloc>().add(ResetHomeStatus());
+                                            }
+                                          });
+                                        },
+                                        onAdFailed: () {
+                                          context.read<HomeBloc>().add(LoadedRewardAD());
+                                        },
+                                      );
                                     },
-                                    onComplete: () {
-                                      context.push(AppRoutesString.dinoView).then((_) {
-                                        if (context.mounted) {
-                                          context.read<HomeBloc>().add(ResetHomeStatus());
-                                        }
-                                      });
-                                    },
-                                    onAdFailed: () {
-                                      context.read<HomeBloc>().add(LoadedRewardAD());
+                                    firstButtonOnTap: () {
+                                      context.pop();
+                                      context.read<HomeBloc>().add(PlayDinoGame());
                                     },
                                   );
                                 }
-                              },
-                            );
+                              }
+                            });
+                          },
+                          onDownloadTap: () {
+                            CommonDialog.loaderDialog(context: context);
+                            bool isSubscribed = AppPreferences().getBool(AppPreferences.subscriptionPlan) ?? false;
+                            if (!isSubscribed) {
+                              NativeAdManager().precacheAd(AppAdIdString.homeBottomNativeAd);
+                            }
+
+                            Future.delayed(const Duration(seconds: 2), () {
+                              if (context.mounted) {
+                                CommonDialog.closeDialog(context: context);
+                                final userCoins = AppPreferences().getInt(AppPreferences.coin) ?? 0;
+                                final hasEnoughCoins = userCoins >= entry.coin;
+
+                                CommonBottomSheet.showCommonBottomSheet(
+                                  adId: AppAdIdString.homeBottomNativeAd,
+                                  context: context,
+                                  firstButtonText: (entry.coin <= 0)
+                                      ? AppStrings.txtWatchAd
+                                      : hasEnoughCoins
+                                      ? "🔓 ${entry.coin} ${AppStrings.txtCoins}"
+                                      : AppStrings.txtPlayGameEarnCoins,
+                                  secondButtonText: AppStrings.txtCancel,
+                                  title: (entry.coin <= 0)
+                                      ? AppStrings.txtUnlockThisPresetEarnTwoCoins
+                                      : hasEnoughCoins
+                                      ? AppStrings.txtUnlockThisPreset
+                                      : AppStrings.txtNotEnoughCoins,
+                                  secondButtonOnTap: () {
+                                    Navigator.of(context).pop();
+                                  },
+                                  firstButtonOnTap: () {
+                                    Navigator.of(context).pop();
+                                    if (entry.coin <= 0) {
+                                      context.read<HomeBloc>().add(LoadRewardAD());
+                                      AdHelper.showRewardedAd(
+                                        adUnitId: AppAdIdString.downloadImageRewardedAd,
+                                        onRewardEarned: () {
+                                          context.read<HomeBloc>().add(LoadedRewardAD());
+                                          context.read<HomeBloc>().add(StoreCoinEvent());
+                                          _handleDownload(entry);
+                                        },
+                                        onComplete: () {},
+                                        onAdFailed: () {
+                                          context.read<HomeBloc>().add(LoadedRewardAD());
+                                          _handleDownload(entry);
+                                        },
+                                      );
+                                    } else if (hasEnoughCoins) {
+                                      context.read<HomeBloc>().add(UsedCoin(coin: entry.coin));
+                                      _handleDownload(entry);
+                                    } else {
+                                      context.read<HomeBloc>().add(LoadRewardAD());
+                                      AdHelper.showRewardedAd(
+                                        adUnitId: AppAdIdString.playDinoRewardedAd,
+                                        onRewardEarned: () {
+                                          context.read<HomeBloc>().add(LoadedRewardAD());
+                                          context.read<HomeBloc>().add(StoreCoinEvent());
+                                        },
+                                        onComplete: () {
+                                          context.push(AppRoutesString.dinoView).then((_) {
+                                            if (context.mounted) {
+                                              context.read<HomeBloc>().add(ResetHomeStatus());
+                                            }
+                                          });
+                                        },
+                                        onAdFailed: () {
+                                          context.read<HomeBloc>().add(LoadedRewardAD());
+                                        },
+                                      );
+                                    }
+                                  },
+                                );
+                              }
+                            });
                           },
                           onOpenInLightroom: () {
-                            context.read<HomeBloc>().add(CheckLightroomInstallation(entry: entry));
+                            CommonDialog.loaderDialog(context: context);
+
+                            bool isSubscribed = AppPreferences().getBool(AppPreferences.subscriptionPlan) ?? false;
+
+                            if (!isSubscribed) {
+                              NativeAdManager().precacheAd(AppAdIdString.homeBottomNativeAd);
+                            }
+
+                            Future.delayed(const Duration(seconds: 2), () {
+                              if (context.mounted) {
+                                CommonDialog.closeDialog(context: context);
+                                context.read<HomeBloc>().add(CheckLightroomInstallation(entry: entry));
+                              }
+                            });
                           },
                         );
                       },
@@ -530,7 +566,24 @@ class _HomeViewState extends State<HomeView> {
                       categories: state.categories,
                       selectedCategory: state.selectedCategory,
                       onCategorySelected: (categoryName) {
+                        int tapCount = AppPreferences().getInt(AppPreferences.categoryTap) ?? 0;
+                        tapCount++;
+                        AppPreferences().setInt(AppPreferences.categoryTap, tapCount);
+
                         context.read<HomeBloc>().add(ChangeCategory(categoryName));
+
+                        final showAd = tapCount % 3 == 0;
+                        if (showAd) {
+                          if (!AdHelper.isCategoryAdLoadingOrShowing) {
+                            AdHelper.isCategoryAdLoadingOrShowing = true;
+                            AdHelper.instantShowInterstitialAd(
+                              adUnitId: AppAdIdString.categoryOnTapInterstitialAd,
+                              onAdClosed: () {
+                                AdHelper.isCategoryAdLoadingOrShowing = false;
+                              },
+                            );
+                          }
+                        }
                       },
                     ),
                 ],

@@ -15,6 +15,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:hive/hive.dart';
+import 'package:lightroom_template/core/constant/app_ad_id_string.dart';
 import 'package:lightroom_template/core/constant/app_colors.dart';
 import 'package:lightroom_template/core/constant/app_string.dart';
 import 'package:lightroom_template/core/utils/native_ad_manager.dart';
@@ -89,6 +90,7 @@ Future<void> _warmUpServicesAfterLaunch() async {
   NativeAdManager().init();
   BannerAdManager().init();
   // NativeAdManager().initFullAds();
+  
   AdHelper.precacheAppOpenAd();
 }
 

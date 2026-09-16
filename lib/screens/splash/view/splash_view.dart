@@ -59,7 +59,12 @@ class _SplashViewState extends State<SplashView> {
                 );
               } else {
                 /// First time user → go onboarding directly
-                context.go(AppRoutesString.onboardingView);
+                AdHelper.instantShowInterstitialAd(
+                  adUnitId: AppAdIdString.splashInterstitialAd,
+                  onAdClosed: () {
+                    context.go(AppRoutesString.onboardingView);
+                  },
+                );
               }
             }
           },

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -33,62 +34,169 @@ class AdHelper {
 
 
   //*****************Interstitial Ad******************
-  static void showInterstitialAd({
-    required String adUnitId,
-    required VoidCallback onComplete,
-  }) {
-    debugPrint("=== Interstitial Requested ===");
-    debugPrint("Ad Unit Id: $adUnitId");
+  static void resetInterstitialAd() {
+    _isAdShowing = false;
+    _interstitialAdLoaded = false;
+    _interstitialAd?.dispose();
+    _interstitialAd = null;
+  }
+
+  static void precacheInterstitialAd({required String adId}) {
+    log('🔄 Precache Interstitial Ad Started - AdId: $adId');
 
     if (_isUserSubscribed) {
-      debugPrint("User subscribed, skipping ad");
-      onComplete();
+      log('❌ User subscribed, skipping preload - AdId: $adId');
       return;
     }
+
+    if (_interstitialAdLoaded || _isAdShowing) {
+      log(
+        '⚠️ Ad already loaded/showing - AdId: $adId | Loaded: $_interstitialAdLoaded | Showing: $_isAdShowing',
+      );
+      return;
+    }
+
+    InterstitialAd.load(
+      adUnitId: adId,
+      request: const AdRequest(),
+      adLoadCallback: InterstitialAdLoadCallback(
+        onAdLoaded: (ad) {
+          _interstitialAd = ad;
+          _interstitialAdLoaded = true;
+          log('✅ Interstitial Ad Precached Successfully - AdId: $adId');
+        },
+        onAdFailedToLoad: (err) {
+          resetInterstitialAd();
+
+          log(
+            '❌ Interstitial Load Failed '
+                '| Code: ${err.code} '
+                '| Error: ${err.message}',
+          );
+        },
+      ),
+    );
+  }
+
+  static void showInterstitialAd({
+    required String adId,
+    VoidCallback? onAdClosed,
+    bool reloadAfterClose = true,
+  }) {
+    log('🎯 Show Interstitial Requested - AdId: $adId');
+
+    if (_isUserSubscribed) {
+      log('❌ User subscribed, skipping ad - AdId: $adId');
+      onAdClosed?.call();
+      return;
+    }
+
+    if (_interstitialAd == null || !_interstitialAdLoaded) {
+      log('⚠️ No Interstitial Ready - AdId: $adId');
+
+      onAdClosed?.call();
+
+      if (reloadAfterClose) {
+        precacheInterstitialAd(adId: adId);
+      }
+
+      return;
+    }
+
+    _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
+      onAdShowedFullScreenContent: (ad) {
+        _isAdShowing = true;
+
+        log('✅ Interstitial Showing - AdId: $adId');
+      },
+
+      onAdDismissedFullScreenContent: (ad) {
+        log('✅ Interstitial Closed By User - AdId: $adId');
+
+        _isAdShowing = false;
+
+        ad.dispose();
+
+        _interstitialAd = null;
+        _interstitialAdLoaded = false;
+
+        onAdClosed?.call();
+
+        if (reloadAfterClose) {
+          precacheInterstitialAd(adId: adId);
+        }
+      },
+
+      onAdFailedToShowFullScreenContent: (ad, error) {
+        log('❌ Interstitial Failed To Show - AdId: $adId | Error: ${error.message}');
+
+        _isAdShowing = false;
+
+        ad.dispose();
+
+        _interstitialAd = null;
+        _interstitialAdLoaded = false;
+
+        onAdClosed?.call();
+
+        if (reloadAfterClose) {
+          precacheInterstitialAd(adId: adId);
+        }
+      },
+    );
+
+    _interstitialAd!.show();
+  }
+
+  //*****************Interstitial Ad Without pre catch ******************
+  static void instantShowInterstitialAd({
+    required String adUnitId,
+    VoidCallback? onAdClosed,
+    VoidCallback? onAdShowed,
+    VoidCallback? onAdFailed,
+  }) {
+    if (_isUserSubscribed) {
+      onAdClosed?.call();
+      return;
+    }
+
+    cancelLoadMoreAd = false;
+    isLoadMoreAdLoadingOrShowing = true;
 
     InterstitialAd.load(
       adUnitId: adUnitId,
       request: const AdRequest(),
       adLoadCallback: InterstitialAdLoadCallback(
         onAdLoaded: (ad) {
-          debugPrint("Interstitial Loaded");
-          debugPrint("Ad Unit Id: $adUnitId");
-          debugPrint("Response Info: ${ad.responseInfo}");
-
+          if (cancelLoadMoreAd) {
+            ad.dispose();
+            isLoadMoreAdLoadingOrShowing = false;
+            onAdClosed?.call();
+            return;
+          }
           ad.fullScreenContentCallback = FullScreenContentCallback(
+            onAdShowedFullScreenContent: (ad) {
+              onAdShowed?.call();
+            },
             onAdDismissedFullScreenContent: (ad) {
-              debugPrint("Interstitial Dismissed");
               ad.dispose();
-              onComplete();
+              isLoadMoreAdLoadingOrShowing = false;
+              onAdClosed?.call();
             },
             onAdFailedToShowFullScreenContent: (ad, error) {
-              debugPrint(
-                "Interstitial Failed To Show: ${error.code} ${error.message}",
-              );
               ad.dispose();
-              onComplete();
-            },
-            onAdShowedFullScreenContent: (ad) {
-              debugPrint("Interstitial Shown");
-            },
-            onAdImpression: (ad) {
-              debugPrint("Interstitial Impression");
-            },
-            onAdClicked: (ad) {
-              debugPrint("Interstitial Clicked");
+              isLoadMoreAdLoadingOrShowing = false;
+              onAdFailed?.call();
+              onAdClosed?.call();
             },
           );
 
-          debugPrint("Calling ad.show()");
           ad.show();
         },
         onAdFailedToLoad: (error) {
-          debugPrint(
-            "Interstitial Failed To Load: ${error.code} ${error.message}",
-          );
-          debugPrint("Ad Unit Id: $adUnitId");
-
-          onComplete();
+          isLoadMoreAdLoadingOrShowing = false;
+          onAdFailed?.call();
+          onAdClosed?.call();
         },
       ),
     );
@@ -131,77 +239,7 @@ class AdHelper {
       ),
     );
   }
-  // static void precacheInterstitialAd({required String adId}) {
-  //   log('Precache Interstitial Ad - Id: $adId');
-  //   if (_isUserSubscribed) return;
-  //   if (_interstitialAdLoaded || _isAdShowing) return;
-  //
-  //   InterstitialAd.load(
-  //     adUnitId: adId,
-  //     request: AdRequest(),
-  //     adLoadCallback: InterstitialAdLoadCallback(
-  //       onAdLoaded: (ad) {
-  //         // ✅ FIXED: NO callback here - let showInterstitialAd handle it
-  //         _interstitialAd = ad;
-  //         _interstitialAdLoaded = true;
-  //         log('Interstitial ad precached');
-  //       },
-  //       onAdFailedToLoad: (err) {
-  //         resetInterstitialAd();
-  //         log('Failed to load interstitial: ${err.message}');
-  //       },
-  //     ),
-  //   );
-  // }
-  //
-  // static void showInterstitialAd({VoidCallback? onAdClosed, required String adId}) {
-  //   if (_isUserSubscribed) {
-  //     onAdClosed?.call();
-  //     return;
-  //   }
-  //
-  //   if (_interstitialAd == null || !_interstitialAdLoaded) {
-  //     log('No interstitial ad ready');
-  //     onAdClosed?.call();
-  //     precacheInterstitialAd(adId: adId);
-  //     return;
-  //   }
-  //
-  //   // ✅ FIXED: Single source of truth for callbacks
-  //   _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
-  //     onAdShowedFullScreenContent: (ad) {
-  //       log('Interstitial ad showed');
-  //       _isAdShowing = true;
-  //     },
-  //     onAdDismissedFullScreenContent: (ad) {
-  //       log('✅ User closed ad - calling onAdClosed');
-  //       _isAdShowing = false;
-  //       ad.dispose();
-  //       _interstitialAd = null;
-  //       _interstitialAdLoaded = false;
-  //       onAdClosed?.call();
-  //       precacheInterstitialAd(adId: adId);
-  //     },
-  //     onAdFailedToShowFullScreenContent: (ad, error) {
-  //       log('Ad failed: ${error.message}');
-  //       _isAdShowing = false;
-  //       ad.dispose();
-  //       _interstitialAd = null;
-  //       _interstitialAdLoaded = false;
-  //       onAdClosed?.call();
-  //       precacheInterstitialAd(adId: adId);
-  //     },
-  //   );
-  //
-  //   _interstitialAd!.show();
-  // }
-  //
-  // static void resetInterstitialAd() {
-  //   _isAdShowing = false;
-  //   _interstitialAdLoaded = false;
-  //   _interstitialAd?.dispose();
-  //   _interstitialAd = null;
-  // }
+
 
   //*****************Landscape Interstitial Ad******************
   static void precacheLandscapeInterstitialAd({required String adId}) {
@@ -746,4 +784,5 @@ class AdHelper {
   //   _appOpenAdLoaded = false;
   //   _appOpenAdLoading = false;
   // }
+
 }
