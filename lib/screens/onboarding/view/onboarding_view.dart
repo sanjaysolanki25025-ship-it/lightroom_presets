@@ -5,7 +5,6 @@ import 'package:lightroom_template/common/ad_widgets/native_ad_onboarding/view/n
 import 'package:lightroom_template/common/common_lottie_asset.dart';
 import 'package:lightroom_template/common/common_sizedbox.dart';
 import 'package:lightroom_template/common/common_text_widget.dart';
-import 'package:lightroom_template/common/dialog/common_dialog.dart';
 import 'package:lightroom_template/core/constant/app_colors.dart';
 import 'package:lightroom_template/core/constant/app_image_string.dart';
 import 'package:lightroom_template/core/constant/app_lotties_string.dart';
@@ -171,7 +170,7 @@ class _OnboardingViewState extends State<OnboardingView> {
       child: Stack(
         children: [
           /// Full screen image
-          Positioned.fill(child: Image.asset(data.image, fit: BoxFit.fill)),
+          Positioned.fill(child: Image.asset(data.image, fit: BoxFit.cover)),
 
           /// Gradient overlay
           Positioned.fill(

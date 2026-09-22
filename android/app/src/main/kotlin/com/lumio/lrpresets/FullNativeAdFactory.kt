@@ -11,13 +11,13 @@ import android.widget.ImageView
 import android.widget.RatingBar
 import android.widget.TextView
 
-import com.google.android.gms.ads.VideoController
-import com.google.android.gms.ads.nativead.MediaView
-import com.google.android.gms.ads.nativead.NativeAd
-import com.google.android.gms.ads.nativead.NativeAdView
-import io.flutter.plugins.googlemobileads.GoogleMobileAdsPlugin
+import com.google.android.libraries.ads.mobile.sdk.common.VideoController
+import com.google.android.libraries.ads.mobile.sdk.nativead.MediaView
+import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAd
+import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdView
+import io.flutter.plugins.googlemobileads.NativeAdFactory
 
-class FullNativeAdFactory(private val context: Context) : GoogleMobileAdsPlugin.NativeAdFactory {
+class FullNativeAdFactory(private val context: Context) : NativeAdFactory {
     override fun createNativeAd(
         nativeAd: NativeAd,
         customOptions: MutableMap<String, Any>?
@@ -62,22 +62,23 @@ class FullNativeAdFactory(private val context: Context) : GoogleMobileAdsPlugin.
 
         // Media
         val media = adView.findViewById<MediaView>(R.id.ad_media)
-        media.setImageScaleType(ImageView.ScaleType.CENTER_CROP)
-        adView.mediaView = media
+        media?.let { m ->
+            m.imageScaleType = ImageView.ScaleType.CENTER_CROP
 
-        val mediaContent = nativeAd.mediaContent
-        val videoAspectRatio = mediaContent?.aspectRatio ?: 0f
+            val mediaContent = nativeAd.mediaContent
+            val videoAspectRatio = mediaContent?.aspectRatio ?: 0f
 
-        media.addOnLayoutChangeListener { _, left, top, right, bottom, _, _, _, _ ->
-            applyCenterCrop(media, videoAspectRatio)
-        }
-
-        media.setOnHierarchyChangeListener(object : ViewGroup.OnHierarchyChangeListener {
-            override fun onChildViewAdded(parent: View?, child: View?) {
-                applyCenterCrop(media, videoAspectRatio)
+            m.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
+                applyCenterCrop(m, videoAspectRatio)
             }
-            override fun onChildViewRemoved(parent: View?, child: View?) {}
-        })
+
+            m.setOnHierarchyChangeListener(object : ViewGroup.OnHierarchyChangeListener {
+                override fun onChildViewAdded(parent: View?, child: View?) {
+                    applyCenterCrop(m, videoAspectRatio)
+                }
+                override fun onChildViewRemoved(parent: View?, child: View?) {}
+            })
+        }
 
         // Advertiser
         adView.advertiserView = adView.findViewById(R.id.ad_advertiser)
@@ -98,15 +99,14 @@ class FullNativeAdFactory(private val context: Context) : GoogleMobileAdsPlugin.
             ctaButton.setTextColor(Color.WHITE)
         }
 
-        adView.setNativeAd(nativeAd)
+        adView.registerNativeAd(nativeAd, media)
 
         // Ensure video is unmuted
         val videoController = nativeAd.mediaContent?.videoController
         if (videoController != null) {
             videoController.mute(false)
-            videoController.videoLifecycleCallbacks = object : VideoController.VideoLifecycleCallbacks() {
+            videoController.videoLifecycleCallbacks = object : VideoController.VideoLifecycleCallbacks {
                 override fun onVideoPlay() {
-                    super.onVideoPlay()
                     videoController.mute(false)
                 }
             }

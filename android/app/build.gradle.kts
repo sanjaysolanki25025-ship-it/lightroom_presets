@@ -91,7 +91,7 @@ android {
         applicationId = "com.lumio.lrpresets"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+        minSdk = 24
         targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
@@ -124,6 +124,12 @@ android {
     }
 }
 
+// Exclude legacy GMA modules pulled by mediation adapters to avoid duplicate class errors with GMA Next-Gen SDK
+configurations.configureEach {
+    exclude(group = "com.google.android.gms", module = "play-services-ads")
+    exclude(group = "com.google.android.gms", module = "play-services-ads-lite")
+}
+
 flutter {
     source = "../.."
 }
@@ -137,9 +143,7 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:34.5.0"))
     implementation("com.google.firebase:firebase-analytics")
 
-    // 🔵 Ads
-    implementation("com.google.android.gms:play-services-ads:25.1.0")
-    implementation("com.android.billingclient:billing:7.1.1")
+    // 🔵 Ads (GMA Next-Gen SDK dependency is provided via google_mobile_ads when USE_NEXT_GEN_SDK=true)
 //    implementation("com.google.ads.mediation:inmobi:11.1.1.0")
 //    implementation("com.google.ads.mediation:pangle:7.9.1.1.0")
 //    implementation("com.google.ads.mediation:facebook:6.21.0.1")

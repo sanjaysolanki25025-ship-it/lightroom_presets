@@ -1,4 +1,3 @@
-
 package com.lumio.lrpresets
 
 import android.content.Context
@@ -10,12 +9,12 @@ import android.widget.ImageView
 import android.widget.RatingBar
 import android.widget.TextView
 
-import com.google.android.gms.ads.nativead.MediaView
-import com.google.android.gms.ads.nativead.NativeAd
-import com.google.android.gms.ads.nativead.NativeAdView
-import io.flutter.plugins.googlemobileads.GoogleMobileAdsPlugin
+import com.google.android.libraries.ads.mobile.sdk.nativead.MediaView
+import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAd
+import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdView
+import io.flutter.plugins.googlemobileads.NativeAdFactory
 
-class MediumNativeAdFactory(private val context: Context) : GoogleMobileAdsPlugin.NativeAdFactory {
+class MediumNativeAdFactory(private val context: Context) : NativeAdFactory {
 
     override fun createNativeAd(nativeAd: NativeAd, customOptions: MutableMap<String, Any>?): NativeAdView {
 
@@ -31,7 +30,6 @@ class MediumNativeAdFactory(private val context: Context) : GoogleMobileAdsPlugi
         val price = adView.findViewById<TextView>(R.id.ad_price)
         val cta = adView.findViewById<Button>(R.id.ad_call_to_action)
 
-        adView.mediaView = mediaView
         adView.headlineView = headline
         adView.bodyView = body
         adView.iconView = icon
@@ -85,7 +83,6 @@ class MediumNativeAdFactory(private val context: Context) : GoogleMobileAdsPlugi
 
         // CTA
         cta.text = nativeAd.callToAction ?: "Install"
-        adView.setNativeAd(nativeAd)
 
         // rounded button
         val radius = 8f * context.resources.displayMetrics.density
@@ -93,6 +90,8 @@ class MediumNativeAdFactory(private val context: Context) : GoogleMobileAdsPlugi
         drawable.setColor(Color.parseColor("#2E5BFF"))
         drawable.cornerRadius = radius
         cta.background = drawable
+
+        adView.registerNativeAd(nativeAd, mediaView)
 
         return adView
     }
