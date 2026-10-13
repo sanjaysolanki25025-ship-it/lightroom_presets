@@ -15,7 +15,6 @@ import 'package:lightroom_template/data/models/onboarding_model.dart';
 import 'package:lightroom_template/routes/app_route_string.dart';
 import 'package:lightroom_template/common/common_button.dart';
 import 'package:lightroom_template/screens/onboarding/bloc/onboarding_bloc.dart';
-import 'package:lightroom_template/common/ad_widgets/full_screen_native_ad/view/full_screen_native_ad_view.dart';
 import 'package:lightroom_template/core/constant/app_ad_id_string.dart';
 
 class OnboardingView extends StatefulWidget {
@@ -93,62 +92,29 @@ class _OnboardingViewState extends State<OnboardingView> {
                       onPageChanged: (index) {
                         context.read<OnboardingBloc>().add(NextButtonOnTapEvent(index: index));
                       },
-                      itemCount: _onboardingData.length + 1,
+                      itemCount: _onboardingData.length,
                       itemBuilder: (context, index) {
-                        if (index == 2) {
-                          return FullScreenNativeAdView(
-                            key: const ValueKey('onboarding_ad'),
-                            adId: AppAdIdString.onBoardingFullScreenAd,
-                          );
-                        }
-                        final dataIndex = index > 2 ? index - 1 : index;
-                        return _buildPageContent(data: _onboardingData[dataIndex]);
+                        return _buildPageContent(data: _onboardingData[index]);
                       },
                     ),
                   ),
-                  if (state.selectedIndex == 2 && (state.showButtons ?? false))
-                    Positioned(
-                      top: MediaQuery.of(context).padding.top + 16,
-                      right: 20,
-                      child: GestureDetector(
-                        onTap: () {
-                          _pageController.nextPage(
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
-                          );
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: const BoxDecoration(
-                            color: Colors.black54,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.close,
-                            color: Colors.white,
-                            size: 24,
+                  state.showButtons ?? false
+                      ? Positioned(
+                          bottom: 16,
+                          left: 20,
+                          right: 20,
+                          child: _buildControls(currentIndex: state.selectedIndex ?? 0),
+                        )
+                      : Positioned(
+                          bottom: 16,
+                          left: 20,
+                          right: 20,
+                          child: CommonLottieAsset(
+                            assetName: AppLottiesString.loadingAnimation,
+                            height: 55,
+                            width: 55,
                           ),
                         ),
-                      ),
-                    ),
-                  if (state.selectedIndex != 2)
-                    state.showButtons ?? false
-                        ? Positioned(
-                            bottom: 20,
-                            left: 24,
-                            right: 24,
-                            child: _buildControls(currentIndex: state.selectedIndex ?? 0),
-                          )
-                        : Positioned(
-                            bottom: 20,
-                            left: 24,
-                            right: 24,
-                            child: CommonLottieAsset(
-                              assetName: AppLottiesString.loadingAnimation,
-                              height: 70,
-                              width: 70,
-                            ),
-                          ),
                 ],
               );
             },
@@ -164,58 +130,60 @@ class _OnboardingViewState extends State<OnboardingView> {
   }
 
   Widget _buildPageContent({required OnboardingModel data}) {
-    return SizedBox(
-      height: MediaQuery.of(context).size.height,
-      width: double.infinity,
-      child: Stack(
-        children: [
-          /// Full screen image
-          Positioned.fill(child: Image.asset(data.image, fit: BoxFit.cover)),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isCompact = constraints.maxHeight < 340;
+        final bottomPadding = isCompact ? 70.0 : 80.0;
 
-          /// Gradient overlay
-          Positioned.fill(
-            child: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [AppColors.transparent, AppColors.surfaceContainerLowest],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  stops: [0.0, 0.8],
+        return Stack(
+          children: [
+            /// Full screen image
+            Positioned.fill(child: Image.asset(data.image, fit: BoxFit.cover)),
+
+            /// Gradient overlay
+            Positioned.fill(
+              child: Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [AppColors.transparent, AppColors.surfaceContainerLowest],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    stops: [0.0, 0.8],
+                  ),
                 ),
               ),
             ),
-          ),
 
-          /// Content
-          Padding(
-            padding: const EdgeInsets.only(left: 16, right: 16, bottom: 85),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Spacer(),
-                CommonTextWidget(
-                  text: data.title,
-                  textStyle: size32TextStyle(textColor: AppColors.onSurface, fontWeight: FontWeight.bold),
-                ),
-                SBH10(),
-                CommonTextWidget(
-                  text: data.subtitle,
-                  textStyle: size18TextStyle(textColor: AppColors.onSurface),
-                ),
-              ],
+            /// Content
+            Padding(
+              padding: EdgeInsets.only(left: 16, right: 16, bottom: bottomPadding),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  CommonTextWidget(
+                    text: data.title,
+                    textStyle: isCompact
+                        ? size24TextStyle(textColor: AppColors.onSurface, fontWeight: FontWeight.bold)
+                        : size26TextStyle(textColor: AppColors.onSurface, fontWeight: FontWeight.bold),
+                  ),
+                  SBH10(),
+                  CommonTextWidget(
+                    text: data.subtitle,
+                    textStyle: isCompact
+                        ? size14TextStyle(textColor: AppColors.onSurface)
+                        : size16TextStyle(textColor: AppColors.onSurface),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
-      ),
+          ],
+        );
+      },
     );
   }
 
   Widget _buildControls({required int currentIndex}) {
-    int activeDotIndex = currentIndex;
-    if (currentIndex == 3) {
-      activeDotIndex = 2;
-    }
-
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -225,9 +193,9 @@ class _OnboardingViewState extends State<OnboardingView> {
             (index) => Container(
               margin: const EdgeInsets.only(right: 8),
               height: 4,
-              width: activeDotIndex == index ? 24 : 12,
+              width: currentIndex == index ? 24 : 12,
               decoration: BoxDecoration(
-                color: activeDotIndex == index ? AppColors.primary : AppColors.outlineVariant,
+                color: currentIndex == index ? AppColors.primary : AppColors.outlineVariant,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -236,23 +204,31 @@ class _OnboardingViewState extends State<OnboardingView> {
 
         // Next / Get Started Button
         CommonButton(
-          text: currentIndex == 3 ? AppStrings.txtGetStarted : AppStrings.txtNext,
+          text: currentIndex == 2 ? AppStrings.txtGetStarted : AppStrings.txtNext,
           onTap: () {
-            if (currentIndex == 3) {
+            if (currentIndex == 2) {
               context.read<OnboardingBloc>().add(SaveOnTapEvent());
             } else if (currentIndex == 0) {
               AdHelper.showInterstitialAd(
                 adId: AppAdIdString.onboarding1InterstitialAd,
+                reloadAfterClose: false,
+                onAdClosed: () {
+                  AdHelper.precacheInterstitialAd(adId: AppAdIdString.onbordingTwoInterstitialAd);
+                  _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+                },
+              );
+            } else if (currentIndex == 1) {
+              AdHelper.showInterstitialAd(
+                adId: AppAdIdString.onbordingTwoInterstitialAd,
+                reloadAfterClose: false,
                 onAdClosed: () {
                   _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
                 },
               );
-            } else {
-              _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
             }
           },
           borderRadius: 100,
-          icon: currentIndex != 3
+          icon: currentIndex != 2
               ? const Icon(Icons.arrow_forward_rounded, color: AppColors.whiteColor, size: 20)
               : null,
           textStyle: size16TextStyle(textColor: AppColors.whiteColor, fontWeight: FontWeight.w600),
@@ -260,4 +236,11 @@ class _OnboardingViewState extends State<OnboardingView> {
       ],
     );
   }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
 }
+

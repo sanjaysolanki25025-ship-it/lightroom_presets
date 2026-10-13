@@ -42,7 +42,7 @@ class _TemplateDetailViewState extends State<TemplateDetailView> {
   void _handleDownload(LrPresetModel entry) {
     context.read<TemplateDetailBloc>().add(
       TemplateDetailDownloadImage(
-        url: "${AppStrings.imageUrl}${widget.entry.image.trim()}.dng",
+        url: widget.entry.fullDngUrl,
         fileName: widget.entry.title,
       ),
     );
@@ -153,6 +153,7 @@ class _TemplateDetailViewState extends State<TemplateDetailView> {
                 if (state.downloadMessage != null) {
                   CommonToast.show(context, state.downloadMessage!);
                 }
+                context.read<TemplateDetailBloc>().add(ResetStatus());
               } else if (state.status == TemplateDetailStatus.success ||
                   state.status == TemplateDetailStatus.rewardAdLoaded) {
                 CommonDialog.closeDialog(context: context);
@@ -163,6 +164,7 @@ class _TemplateDetailViewState extends State<TemplateDetailView> {
                 if (state.downloadMessage != null) {
                   CommonToast.show(context, state.downloadMessage!);
                 }
+                context.read<TemplateDetailBloc>().add(ResetStatus());
               } else if (state.status == TemplateDetailStatus.lightroomNotInstalled) {
                 CommonBottomSheet.showCommonBottomSheet(
                   adId: AppAdIdString.presetDetailBottomNativeAd,
@@ -229,9 +231,10 @@ class _TemplateDetailViewState extends State<TemplateDetailView> {
                           context.read<TemplateDetailBloc>().add(TemplateDetailStoreCoinEvent());
                         },
                         onComplete: () {
+                          final dngUrl = state.entry?.fullDngUrl ?? '';
                           context.read<TemplateDetailBloc>().add(
                             OpenInLightroomEvent(
-                              url: "${AppStrings.imageUrl}${state.entry?.image.trim() ?? ''}.dng",
+                              url: dngUrl,
                               fileName: fileName,
                             ),
                           );
@@ -243,9 +246,10 @@ class _TemplateDetailViewState extends State<TemplateDetailView> {
                     } else if (hasEnoughCoins) {
                       context.read<TemplateDetailBloc>().add(TemplateDetailUsedCoin(coin: requiredCoins));
 
+                      final dngUrl = state.entry?.fullDngUrl ?? '';
                       context.read<TemplateDetailBloc>().add(
                         OpenInLightroomEvent(
-                          url: "${AppStrings.imageUrl}${state.entry?.image.trim() ?? ''}.dng",
+                          url: dngUrl,
                           fileName: fileName,
                         ),
                       );
@@ -281,7 +285,7 @@ class _TemplateDetailViewState extends State<TemplateDetailView> {
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(20),
                           child: CommonNetworkImage(
-                            imageUrl: "${AppStrings.imageUrl}${widget.entry.image.trim()}.png",
+                            imageUrl: widget.entry.fullImageUrl,
                             fit: BoxFit.cover,
                             height: 260,
                             width: 180,
@@ -389,15 +393,20 @@ class _TemplateDetailViewState extends State<TemplateDetailView> {
                             firstButtonOnTap: () {
                               Navigator.of(context).pop();
                               if (widget.entry.coin <= 0) {
+                                bool rewardEarned = false;
                                 context.read<TemplateDetailBloc>().add(TemplateDetailLoadRewardAD());
                                 AdHelper.showRewardedAd(
                                   adUnitId: AppAdIdString.downloadImageRewardedAd,
                                   onRewardEarned: () {
+                                    rewardEarned = true;
                                     context.read<TemplateDetailBloc>().add(TemplateDetailLoadedRewardAD());
                                     context.read<TemplateDetailBloc>().add(TemplateDetailStoreCoinEvent());
-                                    _handleDownload(widget.entry);
                                   },
-                                  onComplete: () {},
+                                  onComplete: () {
+                                    if (rewardEarned) {
+                                      _handleDownload(widget.entry);
+                                    }
+                                  },
                                   onAdFailed: () {
                                     context.read<TemplateDetailBloc>().add(TemplateDetailLoadedRewardAD());
                                     _handleDownload(widget.entry);

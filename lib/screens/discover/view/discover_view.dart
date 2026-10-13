@@ -196,17 +196,21 @@ class _DiscoverViewState extends State<DiscoverView> {
                       slivers: [
                         const SliverToBoxAdapter(child: SBH10()),
       
-                        if (state.status == DiscoverStatus.loading && state.entries.isEmpty)
+                        if ((state.status == DiscoverStatus.loading ||
+                                state.status == DiscoverStatus.selectedCategoryLoading) &&
+                            state.entries.isEmpty)
                           SliverFillRemaining(
                             hasScrollBody: false,
                             child: Center(child: CommonLoader(size: 24, strokeWidth: 2.5)),
                           )
-                        else if (state.status == DiscoverStatus.FailureModel && state.entries.isEmpty)
+                        else if ((state.status == DiscoverStatus.FailureModel ||
+                                state.status == DiscoverStatus.selectedCategoryError) &&
+                            state.entries.isEmpty)
                           SliverFillRemaining(
                             hasScrollBody: false,
                             child: Center(
                               child: CommonTextWidget(
-                                text: "${AppStrings.txtError} ${state.errorMessage}",
+                                text: "${AppStrings.txtError} ${state.errorMessage ?? ''}",
                                 textStyle: size14TextStyle(textColor: AppColors.whiteColor),
                               ),
                             ),
@@ -245,6 +249,7 @@ class _DiscoverViewState extends State<DiscoverView> {
                                     ),
                                   )
                                 : SliverList(
+                                    key: ValueKey('discover_list_${state.selectedCategory}'),
                                     delegate: SliverChildBuilderDelegate((context, row) {
                                       final firstIndex = row * 2;
       
@@ -415,11 +420,18 @@ class _DiscoverViewState extends State<DiscoverView> {
       
                                           /// Show Ad
                                           if (shouldShowAd(row))
-                                            Padding(
-                                              padding: const EdgeInsets.only(bottom: 16),
-                                              child: BlocProvider(
-                                                create: (context) => NativeAdBloc(),
-                                                child: NativeAdView(adId: AppAdIdString.discoverNativeAd),
+                                            _KeepAliveAdWrapper(
+                                              key: ValueKey('discover_ad_keep_alive_${state.selectedCategory}_$row'),
+                                              child: Padding(
+                                                padding: const EdgeInsets.only(bottom: 16),
+                                                child: BlocProvider(
+                                                  key: ValueKey('discover_ad_bloc_${state.selectedCategory}_$row'),
+                                                  create: (context) => NativeAdBloc(),
+                                                  child: NativeAdView(
+                                                    key: ValueKey('discover_ad_view_${state.selectedCategory}_$row'),
+                                                    adId: AppAdIdString.discoverNativeAd,
+                                                  ),
+                                                ),
                                               ),
                                             ),
                                         ],
@@ -436,11 +448,9 @@ class _DiscoverViewState extends State<DiscoverView> {
                                 child: Center(
                                   child: GestureDetector(
                                     onTap: () {
-                                      int loadMoreCount = AppPreferences().getInt(AppPreferences.loadMore) ?? 0;
-                                      loadMoreCount++;
-                                      AppPreferences().setInt(AppPreferences.loadMore, loadMoreCount);
       
-                                      final category = state.selectedCategoryIndex == 0
+                                      final category = (state.selectedCategoryIndex == 0 ||
+                                              state.selectedCategory.toLowerCase() == 'all')
                                           ? ''
                                           : state.selectedCategory;
       
@@ -448,13 +458,10 @@ class _DiscoverViewState extends State<DiscoverView> {
                                         LoadMoreDiscoverData(category: category),
                                       );
       
-                                      final showAd = loadMoreCount % 2 == 0;
-                                      if (showAd) {
-                                        if (!AdHelper.isLoadMoreAdLoadingOrShowing) {
-                                          AdHelper.showLoadMoreInterstitialAd(
-                                            adUnitId: AppAdIdString.loadMoreInterstitialAd,
-                                          );
-                                        }
+                                      if (!AdHelper.isLoadMoreAdLoadingOrShowing) {
+                                        AdHelper.showLoadMoreInterstitialAd(
+                                          adUnitId: AppAdIdString.loadMoreInterstitialAd,
+                                        );
                                       }
                                     },
                                     child: Container(
@@ -470,7 +477,8 @@ class _DiscoverViewState extends State<DiscoverView> {
                                           ),
                                         ],
                                       ),
-                                      child: state.status == DiscoverStatus.loadingMore
+                                      child: (state.status == DiscoverStatus.loadMoreLoading ||
+                                              state.status == DiscoverStatus.loadingMore)
                                           ? const SizedBox(
                                               height: 20,
                                               width: 20,
@@ -506,3 +514,25 @@ class _DiscoverViewState extends State<DiscoverView> {
     );
   }
 }
+
+class _KeepAliveAdWrapper extends StatefulWidget {
+  final Widget child;
+
+  const _KeepAliveAdWrapper({super.key, required this.child});
+
+  @override
+  State<_KeepAliveAdWrapper> createState() => _KeepAliveAdWrapperState();
+}
+
+class _KeepAliveAdWrapperState extends State<_KeepAliveAdWrapper>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return widget.child;
+  }
+}
+

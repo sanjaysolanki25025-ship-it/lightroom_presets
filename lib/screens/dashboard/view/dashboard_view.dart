@@ -104,13 +104,6 @@ class DashboardView extends StatelessWidget {
                     IndexedStack(index: state.currentIndex, children: screens(context)),
                     BlocBuilder<HomeBloc, HomeState>(
                       builder: (context, homeState) {
-                        final isHomeAdPage = state.currentIndex == 0 &&
-                            ((homeState.currentViewIndex + 1) % 3 == 0);
-              
-                        if (isHomeAdPage) {
-                          return const SizedBox.shrink();
-                        }
-              
                         return Positioned(
                           left: 20,
                           right: 20,

@@ -5,8 +5,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:lightroom_template/common/ad_widgets/native_ad_onboarding/bloc/native_ad_onboarding_bloc.dart';
+import 'package:lightroom_template/common/common_sizedbox.dart';
 import 'package:lightroom_template/common/common_text_widget.dart';
-import 'package:lightroom_template/common/shimmer/native_ad_shimmer.dart';
+import 'package:lightroom_template/common/shimmer/native_medium_ad_shimmer.dart';
 import 'package:lightroom_template/core/constant/app_ad_id_string.dart';
 import 'package:lightroom_template/core/constant/app_colors.dart';
 import 'package:lightroom_template/core/constant/app_string.dart';
@@ -28,9 +29,7 @@ class _NativeAdOnboardingWidgetState extends State<NativeAdOnboardingWidget> {
   @override
   void initState() {
     super.initState();
-    if (widget.index != 2) {
-      _loadAd();
-    }
+    _loadAd();
   }
 
   static final List<String> onboardingNativeAds = [
@@ -46,22 +45,17 @@ class _NativeAdOnboardingWidgetState extends State<NativeAdOnboardingWidget> {
       _nativeAd?.dispose();
       _nativeAd = null;
       context.read<NativeAdOnboardingBloc>().add(ShowNativeAdOnboardingEvent(isShowNative: false));
-      if (widget.index != 2) {
-        _loadAd();
-      }
+      _loadAd();
     }
   }
 
   void _loadAd() {
-    int adIndex = widget.index;
-    if (widget.index == 3) {
-      adIndex = 2;
-    }
+    final adIndex = widget.index;
     if (adIndex >= onboardingNativeAds.length) return;
 
     final adId = onboardingNativeAds[adIndex];
     log('🔍 NativeAdOnboardingWidget [index: ${widget.index}, adIndex: $adIndex]: Requesting ad... (adId: $adId)');
-    _nativeAd = NativeAdManager().getAd(adId);
+    _nativeAd = NativeAdManager().getMediumAd(adId);
 
     if (_nativeAd != null) {
       log('✅ NativeAdOnboardingWidget [index: ${widget.index}]: Ad received from manager.');
@@ -76,7 +70,7 @@ class _NativeAdOnboardingWidgetState extends State<NativeAdOnboardingWidget> {
       _nativeAd = NativeAd(
         adUnitId: adId,
         request: const AdRequest(),
-        factoryId: 'row_native_ad',
+        factoryId: 'medium_native_ad',
         listener: NativeAdListener(
           onAdLoaded: (ad) {
             log('✅ NativeAdOnboardingWidget [index: ${widget.index}]: Manual ad loaded.');
@@ -95,24 +89,29 @@ class _NativeAdOnboardingWidgetState extends State<NativeAdOnboardingWidget> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.index == 2) {
-      return const SizedBox.shrink();
-    }
+    final double adHeight = Platform.isIOS ? 360 : 380;
+    final double shimmerHeight = Platform.isIOS ? 340 : 380;
+
     return BlocBuilder<NativeAdOnboardingBloc, NativeAdOnboardingState>(
       builder: (context, state) {
         if (!state.isShowNative || _nativeAd == null) {
-          return SizedBox(height: 140, child: Center(child: NativeAdShimmer()));
+          return SizedBox(
+            height: shimmerHeight,
+            child: const Center(child: NativeMediumAdShimmer()),
+          );
         }
         return Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            /// Sponsored + Remove Ads Row (Hide in splash)
+            SBH5(),
+
+            /// Sponsored Info Row
             Padding(
               padding: EdgeInsets.symmetric(horizontal: Platform.isIOS ? 10.w : 16.w),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  Icon(Icons.info, size: 18, color: AppColors.greyColor),
+                  const Icon(Icons.info, size: 18, color: AppColors.greyColor),
                   Container(
                     decoration: BoxDecoration(borderRadius: BorderRadius.circular(16)),
                     child: Padding(
@@ -131,7 +130,7 @@ class _NativeAdOnboardingWidgetState extends State<NativeAdOnboardingWidget> {
             ),
 
             SizedBox(
-              height: 140,
+              height: adHeight,
               width: double.infinity,
               child: AdWidget(ad: _nativeAd!),
             ),

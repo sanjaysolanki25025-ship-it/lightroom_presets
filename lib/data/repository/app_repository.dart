@@ -17,7 +17,7 @@ class AppRepository {
   Future<Either<FailureModel, List<CategoryModel>>> fetchCategory() async {
     try {
       final querySnapshot = await fireStore
-          .collection(AppStrings.categories)
+          .collection(AppStrings.categoryData)
           .get();
       final categories = querySnapshot.docs
           .map((doc) => CategoryModel.fromMap(doc.data()).copyWith(id: doc.id))

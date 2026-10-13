@@ -79,32 +79,41 @@ class TemplateDetailBloc extends Bloc<TemplateDetailEvent, TemplateDetailState> 
       }
 
       final bytes = response.bodyBytes;
+      final rawName = event.fileName.replaceAll(' ', '_');
+      final fileName = rawName.endsWith('.dng') ? rawName : '$rawName.dng';
 
-      Directory dir;
       if (Platform.isAndroid) {
-        dir = Directory('/storage/emulated/0/Download');
+        final tempDir = await getTemporaryDirectory();
+        final tempFile = File('${tempDir.path}/$fileName');
+        await tempFile.writeAsBytes(bytes);
+
+        final bool? success = await _navigationChannel.invokeMethod('saveToDownloads', {
+          'filePath': tempFile.path,
+          'fileName': fileName,
+        });
+
+        if (success != true) {
+          throw Exception('Failed to save to Downloads folder');
+        }
+
+        emit(
+          state.copyWith(
+            status: TemplateDetailStatus.downloadSuccess,
+            downloadMessage: "${AppStrings.txtDownloadedTo} Download/$fileName",
+          ),
+        );
       } else {
-        dir = await getApplicationDocumentsDirectory();
+        final dir = await getApplicationDocumentsDirectory();
+        final file = File('${dir.path}/$fileName');
+        await file.writeAsBytes(bytes);
+
+        emit(
+          state.copyWith(
+            status: TemplateDetailStatus.downloadSuccess,
+            downloadMessage: "${AppStrings.txtDownloadedTo} $fileName",
+          ),
+        );
       }
-
-      if (!await dir.exists()) {
-        dir = await getExternalStorageDirectory() ?? await getApplicationDocumentsDirectory();
-      }
-
-      final fileName = event.fileName.endsWith('.dng') ? event.fileName : '${event.fileName}.dng';
-
-      final file = File('${dir.path}/$fileName');
-
-      await file.writeAsBytes(bytes);
-
-      emit(
-        state.copyWith(
-          status: TemplateDetailStatus.downloadSuccess,
-          downloadMessage: Platform.isAndroid 
-              ? "${AppStrings.txtDownloadedTo} Download/$fileName"
-              : "${AppStrings.txtDownloadedTo} $fileName",
-        ),
-      );
     } catch (e) {
       emit(
         state.copyWith(
@@ -155,46 +164,27 @@ class TemplateDetailBloc extends Bloc<TemplateDetailEvent, TemplateDetailState> 
     try {
       final dio = Dio();
 
-      Directory? directory;
+      final Directory directory = Platform.isAndroid
+          ? await getTemporaryDirectory()
+          : await getApplicationDocumentsDirectory();
 
-      if (Platform.isAndroid) {
-        directory = Directory('/storage/emulated/0/Download');
-      } else {
-        directory = await getApplicationDocumentsDirectory();
-      }
-
-      if (!await directory.exists()) {
-        directory = await getExternalStorageDirectory();
-      }
-
-      if (directory == null) {
-        emit(
-          state.copyWith(
-            status: TemplateDetailStatus.downloadFailureModel,
-            downloadMessage: "Could not find storage directory",
-          ),
-        );
-        return;
-      }
-
-      /// IMPORTANT:
-      /// event.url MUST be actual .dng URL
-      /// NOT png/jpg preview URL
-
-      final fileName = "${event.fileName.split('.').first}.dng";
+      final rawName = event.fileName.split('.').first.replaceAll(' ', '_');
+      final fileName = rawName.endsWith('.dng') ? rawName : '$rawName.dng';
 
       final savePath = p.join(directory.path, fileName);
-
       final file = File(savePath);
 
-      // Download DNG file
-      if (!await file.exists()) {
+      // Download DNG file if not already downloaded or empty
+      if (!await file.exists() || await file.length() == 0) {
         await dio.download(event.url, savePath, options: Options(responseType: ResponseType.bytes));
       }
 
       // Open in Lightroom
       if (Platform.isAndroid) {
-        await _navigationChannel.invokeMethod('openInLightroom', {'filePath': savePath});
+        final bool? success = await _navigationChannel.invokeMethod('openInLightroom', {'filePath': savePath});
+        if (success != true) {
+          throw Exception("Could not open in Lightroom");
+        }
       } else if (Platform.isIOS) {
         await LaunchApp.openApp(iosUrlScheme: 'lightroom://', androidPackageName: 'com.adobe.lrmobile');
       }

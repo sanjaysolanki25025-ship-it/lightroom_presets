@@ -38,8 +38,7 @@ class ReelItemWidget extends StatelessWidget {
     // if (itemIndex >= 6) {
     //   finalImageUrl = finalImageUrl.replaceAll(RegExp(r'\.dng', caseSensitive: false), '.png');
     // }
-    final String finalImageUrl =
-        "${AppStrings.imageUrl}${entry.image.trim()}.png";
+    final String finalImageUrl = entry.fullImageUrl;
     return Stack(
       fit: StackFit.expand,
       children: [

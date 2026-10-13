@@ -17,50 +17,98 @@ class DiscoverRepository {
     double? randomStart,
   }) async {
     try {
-      Query<Map<String, dynamic>> baseQuery = fireStore.collection(AppStrings.lrPresets);
-
-      if (category != null && category.isNotEmpty) {
-        baseQuery = baseQuery.where("categories", arrayContains: category);
-      }
-
+      final collection = fireStore.collection(AppStrings.lrPresetsData);
       List<QueryDocumentSnapshot<Map<String, dynamic>>> docs = [];
 
-      /// ---------------- FIRST RANDOM QUERY ----------------
-      if (randomStart != null && lastDoc == null) {
-        final firstSnap = await baseQuery
-            .orderBy("rand")
-            .where("rand", isGreaterThanOrEqualTo: randomStart)
-            .limit(limit)
-            .get(const GetOptions(source: Source.server))
-            .timeout(const Duration(seconds: 8), onTimeout: () => throw TimeoutException("slow internet"));
+      final trimmedCategory = category?.trim();
+      final isAll = trimmedCategory == null || trimmedCategory.isEmpty || trimmedCategory.toLowerCase() == 'all';
+      final isPremium = trimmedCategory?.toLowerCase() == 'premium';
+      final isTrending = trimmedCategory?.toLowerCase() == 'trending';
 
-        docs.addAll(firstSnap.docs);
-
-        /// ---------------- WRAP AROUND QUERY ----------------
-        if (docs.length < limit) {
-          final remaining = limit - docs.length;
-
-          final secondSnap = await baseQuery
-              .orderBy("rand")
-              .where("rand", isGreaterThanOrEqualTo: 0)
-              .limit(remaining)
-              .get(const GetOptions(source: Source.server))
-              .timeout(const Duration(seconds: 8), onTimeout: () => throw TimeoutException("slow internet"));
-
-          docs.addAll(secondSnap.docs);
-        }
-      } else {
-        Query<Map<String, dynamic>> query = baseQuery.orderBy("rand").limit(limit);
+      if (isPremium) {
+        Query<Map<String, dynamic>> query = collection
+            .where("coin", isGreaterThan: 0)
+            .limit(limit);
 
         if (lastDoc != null) {
           query = query.startAfterDocument(lastDoc);
         }
 
         final snap = await query
-            .get(const GetOptions(source: Source.server))
-            .timeout(const Duration(seconds: 8), onTimeout: () => throw TimeoutException("slow internet"));
+            .get()
+            .timeout(const Duration(seconds: 10), onTimeout: () => throw TimeoutException("slow internet"));
 
         docs = snap.docs;
+      } else if (isTrending) {
+        Query<Map<String, dynamic>> query = collection
+            .orderBy("createdAt", descending: true)
+            .limit(limit);
+
+        if (lastDoc != null) {
+          query = query.startAfterDocument(lastDoc);
+        }
+
+        final snap = await query
+            .get()
+            .timeout(const Duration(seconds: 10), onTimeout: () => throw TimeoutException("slow internet"));
+
+        docs = snap.docs;
+      } else if (!isAll) {
+        // Query by exact category name (e.g. 'Moody', 'Sky Colour', etc.)
+        // IMPORTANT: DO NOT add .orderBy("rand") here!
+        // In Firestore, combining .where("category", isEqualTo: ...) with .orderBy("rand")
+        // strictly requires a composite index on (category, rand). Without it, Firestore
+        // throws a failed-precondition exception and fails to load any data.
+        Query<Map<String, dynamic>> query = collection
+            .where("category", isEqualTo: trimmedCategory)
+            .limit(limit);
+
+        if (lastDoc != null) {
+          query = query.startAfterDocument(lastDoc);
+        }
+
+        final snap = await query
+            .get()
+            .timeout(const Duration(seconds: 10), onTimeout: () => throw TimeoutException("slow internet"));
+
+        docs = snap.docs;
+      } else {
+        // "All" - no category filter
+        if (randomStart != null && lastDoc == null) {
+          final firstSnap = await collection
+              .orderBy("rand")
+              .where("rand", isGreaterThanOrEqualTo: randomStart)
+              .limit(limit)
+              .get()
+              .timeout(const Duration(seconds: 10), onTimeout: () => throw TimeoutException("slow internet"));
+
+          docs.addAll(firstSnap.docs);
+
+          if (docs.length < limit) {
+            final remaining = limit - docs.length;
+
+            final secondSnap = await collection
+                .orderBy("rand")
+                .where("rand", isGreaterThanOrEqualTo: 0)
+                .limit(remaining)
+                .get()
+                .timeout(const Duration(seconds: 10), onTimeout: () => throw TimeoutException("slow internet"));
+
+            docs.addAll(secondSnap.docs);
+          }
+        } else {
+          Query<Map<String, dynamic>> query = collection.orderBy("rand").limit(limit);
+
+          if (lastDoc != null) {
+            query = query.startAfterDocument(lastDoc);
+          }
+
+          final snap = await query
+              .get()
+              .timeout(const Duration(seconds: 10), onTimeout: () => throw TimeoutException("slow internet"));
+
+          docs = snap.docs;
+        }
       }
 
       final templates = docs.map((doc) => LrPresetModel.fromMap(doc.data()).copyWith(id: doc.id)).toList();

@@ -51,19 +51,41 @@ class DiscoverBloc extends Bloc<DiscoverEvent, DiscoverState> {
   ];
 
   Future<void> _onFetchDiscoverData(FetchDiscoverData event, Emitter<DiscoverState> emit) async {
-    emit(state.copyWith(status: DiscoverStatus.selectedCategoryLoading));
+    emit(
+      state.copyWith(
+        status: DiscoverStatus.selectedCategoryLoading,
+        entries: [],
+        lastDoc: null,
+        hasMore: false,
+      ),
+    );
 
-    final result = await discoverRepository.fetchPresentsDiscover(category: event.category, limit: _pageSize);
+    final isAll = event.category.isEmpty || event.category.toLowerCase() == 'all';
+    final randomStartVal = isAll ? Random().nextDouble() : null;
+
+    final result = await discoverRepository.fetchPresentsDiscover(
+      category: event.category,
+      limit: _pageSize,
+      randomStart: randomStartVal,
+    );
     await result.match(
       (f) {
-        emit(state.copyWith(status: DiscoverStatus.selectedCategoryError, errorMessage: f.message));
+        emit(
+          state.copyWith(
+            status: DiscoverStatus.selectedCategoryError,
+            errorMessage: f.message,
+            entries: [],
+            lastDoc: null,
+            hasMore: false,
+          ),
+        );
       },
       (paged) async {
         /// favourite presents
         final favoriteIdsResult = await appRepository.fetchFavouritePresents();
 
         List<String> favIds = [];
-        favoriteIdsResult.match((FailureModel) => null, (favModels) {
+        favoriteIdsResult.match((_) => null, (favModels) {
           favIds = favModels.map((fav) => fav.presentId.toString()).toList();
         });
 
@@ -102,7 +124,7 @@ class DiscoverBloc extends Bloc<DiscoverEvent, DiscoverState> {
         final favoriteIdsResult = await appRepository.fetchFavouritePresents();
 
         List<String> favIds = [];
-        favoriteIdsResult.match((FailureModel) => null, (favModels) {
+        favoriteIdsResult.match((_) => null, (favModels) {
           favIds = favModels.map((fav) => fav.presentId.toString()).toList();
         });
 
@@ -137,20 +159,20 @@ class DiscoverBloc extends Bloc<DiscoverEvent, DiscoverState> {
     final favoriteIdsResult = await appRepository.fetchFavouritePresents();
     List<String> favIds = [];
 
-    favoriteIdsResult.match((FailureModel) => null, (favModels) {
+    favoriteIdsResult.match((_) => null, (favModels) {
       favIds = favModels.map((fav) => fav.presentId.toString()).toList();
     });
 
     await categoryResult.fold(
-      (FailureModel) async {
+      (failure) async {
         if (emit.isDone) return;
-        emit(state.copyWith(status: DiscoverStatus.FailureModel, errorMessage: FailureModel.message));
+        emit(state.copyWith(status: DiscoverStatus.FailureModel, errorMessage: failure.message));
       },
       (categoryList) async {
         await presentsResult.fold(
-          (FailureModel) async {
+          (failure) async {
             if (emit.isDone) return;
-            emit(state.copyWith(status: DiscoverStatus.FailureModel, errorMessage: FailureModel.message));
+            emit(state.copyWith(status: DiscoverStatus.FailureModel, errorMessage: failure.message));
           },
           (paged) async {
             List<LrPresetModel> updatedPresents = paged.presents.map((presents) {
@@ -159,11 +181,16 @@ class DiscoverBloc extends Bloc<DiscoverEvent, DiscoverState> {
             }).toList();
             updatedPresents.shuffle();
 
-            final existingNames = categoryListData.map((c) => c.name).toSet();
+            final List<CategoryModel> fullCategories = [
+              CategoryModel(name: 'All'),
+              CategoryModel(name: 'Premium'),
+              CategoryModel(name: 'Trending'),
+            ];
+            final existingNames = fullCategories.map((c) => c.name.toLowerCase()).toSet();
             for (final cat in categoryList) {
-              if (!existingNames.contains(cat.name)) {
-                categoryListData.add(cat);
-                existingNames.add(cat.name);
+              if (!existingNames.contains(cat.name.toLowerCase())) {
+                fullCategories.add(cat);
+                existingNames.add(cat.name.toLowerCase());
               }
             }
             if (emit.isDone) return;
@@ -171,11 +198,12 @@ class DiscoverBloc extends Bloc<DiscoverEvent, DiscoverState> {
             emit(
               state.copyWith(
                 status: DiscoverStatus.success,
-                categories: categoryListData,
+                categories: fullCategories,
                 entries: updatedPresents,
                 lastDoc: paged.lastDoc,
                 hasMore: paged.hasMore,
                 selectedCategoryIndex: 0,
+                selectedCategory: 'All',
               ),
             );
           },
@@ -189,17 +217,23 @@ class DiscoverBloc extends Bloc<DiscoverEvent, DiscoverState> {
     final categories = state.categories;
     final categoryName = (selectedIndex >= 0 && selectedIndex < categories.length)
         ? categories[selectedIndex].name
-        : categories[0].name;
-    if (event.index == 0) {
-      add(FetchDiscoverData(category: ''));
-    } else if (event.index == 1) {
-      add(FetchDiscoverData(category: 'Premium'));
-    } else if (event.index == 2) {
-      add(FetchDiscoverData(category: 'Trending'));
-    } else {
-      add(FetchDiscoverData(category: categoryName));
-    }
-    emit(state.copyWith(selectedCategoryIndex: event.index, selectedCategory: event.category));
+        : (event.category.isNotEmpty ? event.category : 'All');
+
+    final isAll = categoryName.toLowerCase() == 'all' || selectedIndex == 0;
+    final String fetchCategory = isAll ? '' : categoryName;
+
+    emit(
+      state.copyWith(
+        selectedCategoryIndex: selectedIndex,
+        selectedCategory: categoryName,
+        status: DiscoverStatus.selectedCategoryLoading,
+        entries: [],
+        lastDoc: null,
+        hasMore: false,
+      ),
+    );
+
+    add(FetchDiscoverData(category: fetchCategory));
   }
 
   Future<void> _discoverLikeReelEvent(DiscoverLikeReelEvent event, Emitter<DiscoverState> emit) async {

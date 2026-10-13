@@ -38,8 +38,18 @@ class AppAdIdString {
   //     ? 'ca-app-pub-3940256099942544/1033173712'
   //     : 'ca-app-pub-3940256099942544/4411468910';
   //
+  // // onboarding 2 interstitial ad
+  // static final String onbordingTwoInterstitialAd = _isAndroid
+  //     ? 'ca-app-pub-3940256099942544/1033173712'
+  //     : 'ca-app-pub-3940256099942544/4411468910';
+  //
   // // splash interstitial
   // static final String splashInterstitialAd = _isAndroid
+  //     ? 'ca-app-pub-3940256099942544/1033173712'
+  //     : 'ca-app-pub-3940256099942544/4411468910';
+  //
+  // // home reels interstitial ad
+  // static final String homeReelsInterstitialAd = _isAndroid
   //     ? 'ca-app-pub-3940256099942544/1033173712'
   //     : 'ca-app-pub-3940256099942544/4411468910';
   //
@@ -202,7 +212,10 @@ class AppAdIdString {
   static final String splashInterstitialAd = _isAndroid ? 'ca-app-pub-1234444627237787/1689500465' : '';
 
   // onboarding 1 interstitial ad
-  static final String onboarding1InterstitialAd = _isAndroid ? '  ca-app-pub-1234444627237787/9903866558' : '';
+  static final String onboarding1InterstitialAd = _isAndroid ? 'ca-app-pub-1234444627237787/9903866558' : '';
+
+  // onboarding 2 interstitial ad
+  static final String onbordingTwoInterstitialAd = _isAndroid ? 'ca-app-pub-1234444627237787/5028901671' : '';
 
   // back button interstitial ad
   static final String backButtonInterstitialAd = _isAndroid ? 'ca-app-pub-1234444627237787/9658755368' : '';
@@ -213,9 +226,14 @@ class AppAdIdString {
   // load more interstitial ad
   static final String loadMoreInterstitialAd = _isAndroid ? 'ca-app-pub-1234444627237787/2349058241' : '';
 
-  // load more interstitial ad
+  // category on tap interstitial ad
   static final String categoryOnTapInterstitialAd = _isAndroid
       ? 'ca-app-pub-1234444627237787/2349588472'
+      : '';
+
+  // home reels interstitial ad
+  static final String homeReelsInterstitialAd = _isAndroid
+      ? 'ca-app-pub-1234444627237787/2159642867'
       : '';
 
   ///============ banner ad ===========

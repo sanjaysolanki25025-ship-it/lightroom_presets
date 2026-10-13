@@ -32,8 +32,10 @@ class AppStrings {
   // static const String txtNotificationChannel = "broadcast";
 
   /// ----------------- Collection ---------------------
-  static const String lrPresets = "lr_presets";
-  static const String categories = "categories";
+  static const String lrPresets = "lr_presets_data";
+  static const String lrPresetsData = "lr_presets_data";
+  static const String categories = "category_data";
+  static const String categoryData = "category_data";
   static const String feedback = "feedback";
   static const String apps = "apps";
 
@@ -46,6 +48,7 @@ class AppStrings {
 
   /// ----------------- Links & code & functionality string ---------------------
   static const String imageUrl = "https://lightroom-admin.lightroom-api.workers.dev/images/";
+  static const String dngUrl = "https://www.sajjadit.xyz/Lr_Presets_File_Data/lr_20_24/uploadedfile/";
   static const String clarityKey = "wj87iflooi";
   static const String applePurchaseKey = "";
   static const String googlePurchaseKey = "";

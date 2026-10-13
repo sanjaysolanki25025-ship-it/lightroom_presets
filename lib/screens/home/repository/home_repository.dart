@@ -17,18 +17,26 @@ class HomeRepository {
     double? randomStart,
   }) async {
     try {
-      Query<Map<String, dynamic>> query = fireStore.collection(AppStrings.lrPresets);
+      Query<Map<String, dynamic>> query = fireStore.collection(AppStrings.lrPresetsData);
 
-      /// CATEGORY FILTER
-      if (category != null && category.isNotEmpty) {
-        query = query.where("categories", arrayContains: category);
-      }
+      final trimmedCat = category?.trim();
+      final hasCategory = trimmedCat != null && trimmedCat.isNotEmpty && trimmedCat.toLowerCase() != 'all';
 
-      /// RANDOM START + PAGINATION
-      if (randomStart != null && lastDoc == null) {
-        query = query.orderBy("rand").where("rand", isGreaterThanOrEqualTo: randomStart);
+      if (hasCategory) {
+        if (trimmedCat.toLowerCase() == 'premium') {
+          query = query.where("coin", isGreaterThan: 0);
+        } else if (trimmedCat.toLowerCase() == 'trending') {
+          query = query.orderBy("createdAt", descending: true);
+        } else {
+          query = query.where("category", isEqualTo: trimmedCat);
+        }
       } else {
-        query = query.orderBy("rand");
+        /// RANDOM START + PAGINATION FOR ALL
+        if (randomStart != null && lastDoc == null) {
+          query = query.orderBy("rand").where("rand", isGreaterThanOrEqualTo: randomStart);
+        } else {
+          query = query.orderBy("rand");
+        }
       }
 
       // query = query.orderBy("createdAt", descending: true);

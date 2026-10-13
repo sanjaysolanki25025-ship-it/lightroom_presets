@@ -27,7 +27,7 @@ class GridItemWidget extends StatelessWidget {
           children: [
             CommonNetworkImage(
               isPreCache: false,
-              imageUrl: "${AppStrings.imageUrl}${entry.image.trim()}.png",
+              imageUrl: entry.fullImageUrl,
               fit: BoxFit.cover,
               isShimmer: true,
             ),

@@ -27,7 +27,10 @@ class NativeAdView extends StatefulWidget {
   State<NativeAdView> createState() => _NativeAdViewState();
 }
 
-class _NativeAdViewState extends State<NativeAdView> {
+class _NativeAdViewState extends State<NativeAdView> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
   static bool get _isUserSubscribed {
     return AppPreferences().getBool(AppPreferences.subscriptionPlan) ?? false;
   }
@@ -105,6 +108,8 @@ class _NativeAdViewState extends State<NativeAdView> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
+
     /// If ad should not show
     if (!_shouldShowAd) {
       return const SizedBox();
@@ -118,7 +123,7 @@ class _NativeAdViewState extends State<NativeAdView> {
                 ? 140
                 : Platform.isIOS
                 ? 340
-                : 370,
+                : 380,
             child: Center(child: widget.isSmallAd ? const NativeAdShimmer() : const NativeMediumAdShimmer()),
           );
         }
@@ -175,7 +180,7 @@ class _NativeAdViewState extends State<NativeAdView> {
                   ? 140
                   : Platform.isIOS
                   ? 360
-                  : 370,
+                  : 380,
               width: double.infinity,
               child: AdWidget(ad: _nativeAd!),
             ),

@@ -4,7 +4,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:lightroom_template/core/constant/app_ad_id_string.dart';
-import 'package:lightroom_template/core/constant/app_string.dart';
 import 'package:lightroom_template/data/helpers/preferences_helper.dart';
 
 
@@ -42,6 +41,11 @@ class AdHelper {
   }
 
   static void precacheInterstitialAd({required String adId}) {
+    if (adId == AppAdIdString.homeReelsInterstitialAd) {
+      precacheHomeReelsInterstitialAd(adId: adId);
+      return;
+    }
+
     log('🔄 Precache Interstitial Ad Started - AdId: $adId');
 
     if (_isUserSubscribed) {
@@ -83,6 +87,15 @@ class AdHelper {
     VoidCallback? onAdClosed,
     bool reloadAfterClose = true,
   }) {
+    if (adId == AppAdIdString.homeReelsInterstitialAd) {
+      showHomeReelsInterstitialAd(
+        adId: adId,
+        onAdClosed: onAdClosed,
+        reloadAfterClose: reloadAfterClose,
+      );
+      return;
+    }
+
     log('🎯 Show Interstitial Requested - AdId: $adId');
 
     if (_isUserSubscribed) {
@@ -146,6 +159,143 @@ class AdHelper {
     );
 
     _interstitialAd!.show();
+  }
+
+  //*****************Home Reels Interstitial Ad******************
+  static InterstitialAd? _homeReelsInterstitialAd;
+  static bool _homeReelsInterstitialAdLoaded = false;
+  static bool _isHomeReelsAdShowing = false;
+  static bool _isHomeReelsAdLoading = false;
+
+  // Public getter to know if a home reels interstitial ad is ready to be shown
+  static bool get isHomeReelsInterstitialReady =>
+      _homeReelsInterstitialAdLoaded && _homeReelsInterstitialAd != null && !_isHomeReelsAdShowing;
+
+  static void resetHomeReelsInterstitialAd() {
+    _isHomeReelsAdShowing = false;
+    _homeReelsInterstitialAdLoaded = false;
+    _isHomeReelsAdLoading = false;
+    _homeReelsInterstitialAd?.dispose();
+    _homeReelsInterstitialAd = null;
+  }
+
+  static void precacheHomeReelsInterstitialAd({String? adId}) {
+    final targetAdId = adId ?? AppAdIdString.homeReelsInterstitialAd;
+    log('🔄 Precache Home Reels Interstitial Ad Started - AdId: $targetAdId');
+
+    if (_isUserSubscribed) {
+      log('❌ User subscribed, skipping preload - AdId: $targetAdId');
+      return;
+    }
+
+    if (_homeReelsInterstitialAdLoaded || _isHomeReelsAdShowing || _isHomeReelsAdLoading) {
+      log(
+        '⚠️ Home Reels Ad already loaded/loading/showing - AdId: $targetAdId | Loaded: $_homeReelsInterstitialAdLoaded | Loading: $_isHomeReelsAdLoading | Showing: $_isHomeReelsAdShowing',
+      );
+      return;
+    }
+
+    _isHomeReelsAdLoading = true;
+
+    InterstitialAd.load(
+      adUnitId: targetAdId,
+      request: const AdRequest(),
+      adLoadCallback: InterstitialAdLoadCallback(
+        onAdLoaded: (ad) {
+          _homeReelsInterstitialAd = ad;
+          _homeReelsInterstitialAdLoaded = true;
+          _isHomeReelsAdLoading = false;
+          log('✅ Home Reels Interstitial Ad Precached Successfully - AdId: $targetAdId');
+        },
+        onAdFailedToLoad: (err) {
+          resetHomeReelsInterstitialAd();
+
+          log(
+            '❌ Home Reels Interstitial Load Failed '
+            '| Code: ${err.code} '
+            '| Error: ${err.message}',
+          );
+
+          // Retry pre-caching after 5 seconds if still needed
+          Future.delayed(const Duration(seconds: 5), () {
+            if (!_isUserSubscribed && !_homeReelsInterstitialAdLoaded && !_isHomeReelsAdLoading) {
+              precacheHomeReelsInterstitialAd(adId: targetAdId);
+            }
+          });
+        },
+      ),
+    );
+  }
+
+  static void showHomeReelsInterstitialAd({
+    String? adId,
+    VoidCallback? onAdClosed,
+    bool reloadAfterClose = true,
+  }) {
+    final targetAdId = adId ?? AppAdIdString.homeReelsInterstitialAd;
+    log('🎯 Show Home Reels Interstitial Requested - AdId: $targetAdId');
+
+    if (_isUserSubscribed) {
+      log('❌ User subscribed, skipping ad - AdId: $targetAdId');
+      onAdClosed?.call();
+      return;
+    }
+
+    if (_homeReelsInterstitialAd == null || !_homeReelsInterstitialAdLoaded) {
+      log('⚠️ No Home Reels Interstitial Ready - AdId: $targetAdId');
+
+      onAdClosed?.call();
+
+      if (reloadAfterClose) {
+        precacheHomeReelsInterstitialAd(adId: targetAdId);
+      }
+
+      return;
+    }
+
+    _homeReelsInterstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
+      onAdShowedFullScreenContent: (ad) {
+        _isHomeReelsAdShowing = true;
+
+        log('✅ Home Reels Interstitial Showing - AdId: $targetAdId');
+      },
+
+      onAdDismissedFullScreenContent: (ad) {
+        log('✅ Home Reels Interstitial Closed By User - AdId: $targetAdId');
+
+        _isHomeReelsAdShowing = false;
+
+        ad.dispose();
+
+        _homeReelsInterstitialAd = null;
+        _homeReelsInterstitialAdLoaded = false;
+
+        onAdClosed?.call();
+
+        if (reloadAfterClose) {
+          precacheHomeReelsInterstitialAd(adId: targetAdId);
+        }
+      },
+
+      onAdFailedToShowFullScreenContent: (ad, error) {
+        log('❌ Home Reels Interstitial Failed To Show - AdId: $targetAdId | Error: ${error.message}');
+
+        _isHomeReelsAdShowing = false;
+
+        ad.dispose();
+
+        _homeReelsInterstitialAd = null;
+        _homeReelsInterstitialAdLoaded = false;
+
+        onAdClosed?.call();
+
+        if (reloadAfterClose) {
+          precacheHomeReelsInterstitialAd(adId: targetAdId);
+        }
+      },
+    );
+
+    _homeReelsInterstitialAd!.show();
   }
 
   //*****************Interstitial Ad Without pre catch ******************

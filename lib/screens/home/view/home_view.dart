@@ -5,7 +5,6 @@ import 'package:lightroom_template/common/ad_widgets/native_ad/bloc/native_ad_bl
 import 'package:lightroom_template/common/ad_widgets/native_ad/view/native_ad_view.dart';
 import 'package:lightroom_template/common/common_sizedbox.dart';
 import 'package:lightroom_template/data/models/favourite_model.dart';
-import 'package:lightroom_template/common/ad_widgets/full_screen_native_ad/view/full_screen_native_ad_view.dart';
 import 'package:lightroom_template/common/common_bottom_sheet.dart';
 import 'package:lightroom_template/common/common_loader.dart';
 import 'package:lightroom_template/common/common_text_widget.dart';
@@ -40,7 +39,7 @@ class _HomeViewState extends State<HomeView> {
   // How many pages to keep behind before evicting
   // e.g. if current is index 2, evict index 0 (2 - 2 = 0)
   static const int _evictOffset = 2;
-  int _lastPrecachedIndex = -1;
+  int _lastAdShownIndex = -1;
 
   @override
   void initState() {
@@ -52,6 +51,7 @@ class _HomeViewState extends State<HomeView> {
     context.read<HomeBloc>().add(FetchHomeData());
     _pageController.addListener(_onScroll);
     InAppUpdateManager.checkForUpdate(context);
+    AdHelper.precacheHomeReelsInterstitialAd(adId: AppAdIdString.homeReelsInterstitialAd);
   }
 
   @override
@@ -73,7 +73,7 @@ class _HomeViewState extends State<HomeView> {
 
   void _handleDownload(LrPresetModel entry) {
     context.read<HomeBloc>().add(
-      DownloadImage(url: "${AppStrings.imageUrl}${entry.image.trim()}.dng", fileName: entry.title),
+      DownloadImage(url: entry.fullDngUrl, fileName: entry.title),
     );
   }
 
@@ -83,9 +83,7 @@ class _HomeViewState extends State<HomeView> {
 
   String? _imageUrlForContentIndex(int contentIndex, List<LrPresetModel> entries) {
     if (contentIndex < 0 || contentIndex >= entries.length) return null;
-    final image = entries[contentIndex].image.trim();
-    if (image.isEmpty) return null;
-    return "${AppStrings.imageUrl}$image";
+    return entries[contentIndex].fullImageUrl;
   }
 
   // ─────────────────────────────────────────────
@@ -94,7 +92,7 @@ class _HomeViewState extends State<HomeView> {
   // ─────────────────────────────────────────────
 
   int _contentIndexFromPageIndex(int pageIndex) {
-    return pageIndex - (pageIndex ~/ 3);
+    return pageIndex;
   }
 
   // ─────────────────────────────────────────────
@@ -139,10 +137,21 @@ class _HomeViewState extends State<HomeView> {
     // ✅ Precache next content item
     // _precacheContentIndex(currentContentIndex + 1, entries);
 
-    // ✅ Evict content item 3 pages behind current to free memory
-    // e.g. page 0→ evict nothing, page 3 → evict index 0, page 4 → evict index 1
+    // ✅ Evict content item 2 pages behind current to free memory
     final evictContentIndex = currentContentIndex - _evictOffset;
     _evictContentIndex(evictContentIndex, entries);
+
+    // Show interstitial ad every 3rd reel
+    if (pageIndex > 0 && (pageIndex + 1) % 3 == 0 && _lastAdShownIndex != pageIndex) {
+      _lastAdShownIndex = pageIndex;
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted) {
+          AdHelper.showHomeReelsInterstitialAd(
+            adId: AppAdIdString.homeReelsInterstitialAd,
+          );
+        }
+      });
+    }
   }
 
   @override
@@ -162,11 +171,13 @@ class _HomeViewState extends State<HomeView> {
               if (state.downloadMessage != null) {
                 CommonToast.show(context, state.downloadMessage!);
               }
+              context.read<HomeBloc>().add(ResetHomeStatus());
             } else if (state.status == HomeStatus.downloadFailureModel) {
               CommonDialog.closeDialog(context: context);
               if (state.downloadMessage != null) {
                 CommonToast.show(context, state.downloadMessage!);
               }
+              context.read<HomeBloc>().add(ResetHomeStatus());
             } else if (state.status == HomeStatus.lightroomInstalled) {
               final userCoins = AppPreferences().getInt(AppPreferences.coin) ?? 0;
               final requiredCoins = state.entry?.coin ?? 0;
@@ -203,10 +214,10 @@ class _HomeViewState extends State<HomeView> {
                         context.read<HomeBloc>().add(StoreCoinEvent());
                       },
                       onComplete: () {
-                        final imageUrl = "${AppStrings.imageUrl}${state.entry?.image.trim() ?? ''}.dng";
+                        final dngUrl = state.entry?.fullDngUrl ?? '';
                         context.read<HomeBloc>().add(
                           OpenInLightroom(
-                            url: imageUrl,
+                            url: dngUrl,
                             fileName: fileName,
                           ),
                         );
@@ -217,10 +228,10 @@ class _HomeViewState extends State<HomeView> {
                     );
                   } else if (hasEnoughCoins) {
                     context.read<HomeBloc>().add(UsedCoin(coin: requiredCoins));
-                    final imageUrl = "${AppStrings.imageUrl}${state.entry?.image.trim() ?? ''}.dng";
+                    final dngUrl = state.entry?.fullDngUrl ?? '';
                     context.read<HomeBloc>().add(
                       OpenInLightroom(
-                        url: imageUrl,
+                        url: dngUrl,
                         fileName: fileName,
                       ),
                     );
@@ -273,7 +284,7 @@ class _HomeViewState extends State<HomeView> {
               }
 
               if (state.entries.isEmpty) {
-                _lastPrecachedIndex = -1;
+                _lastAdShownIndex = -1;
               } else {
 
                 // Show Dino dialog once per day when data is loaded successfully
@@ -295,9 +306,6 @@ class _HomeViewState extends State<HomeView> {
           child: BlocBuilder<HomeBloc, HomeState>(
             builder: (context, state) {
               final entries = state.entries;
-              final totalContentCount = entries.length;
-              final totalAdsCount = totalContentCount ~/ 2;
-              final totalItems = totalContentCount + totalAdsCount;
 
               return Stack(
                 children: [
@@ -342,30 +350,20 @@ class _HomeViewState extends State<HomeView> {
                     PageView.builder(
                       controller: _pageController,
                       scrollDirection: Axis.vertical,
-                      itemCount: totalItems,
+                      itemCount: entries.length,
                       onPageChanged: (pageIndex) {
                         final currentEntries = context.read<HomeBloc>().state.entries;
                         _onPageChanged(pageIndex, currentEntries);
                       },
                       itemBuilder: (context, index) {
-                        // Trigger load more near end
-                        // if (index >= state.entries.length - 2 && state.hasMore) {
-                        //   context.read<HomeBloc>().add(LoadMoreHomeData());
-                        // }
+                        if (index >= entries.length) return const SizedBox.shrink();
 
-                        // Every 3rd page is an ad
-                        if ((index + 1) % 3 == 0) {
-                          return FullScreenNativeAdView(key: ValueKey('ad_$index'));
-                        }
-
-                        final contentIndex = index - (index ~/ 3);
-                        if (contentIndex >= entries.length) return const SizedBox.shrink();
-
-                        final entry = entries[contentIndex];
+                        final contentIndex = index;
+                        final entry = entries[index];
 
                         return ReelItemWidget(
                           entry: entry,
-                          isFavourite: entries[contentIndex].isFavourite,
+                          isFavourite: entries[index].isFavourite,
                           onFavouriteTap: () {
                             if (entries[contentIndex].isFavourite) {
                               context.read<HomeBloc>().add(
@@ -504,9 +502,10 @@ class _HomeViewState extends State<HomeView> {
                                         onRewardEarned: () {
                                           context.read<HomeBloc>().add(LoadedRewardAD());
                                           context.read<HomeBloc>().add(StoreCoinEvent());
+                                        },
+                                        onComplete: () {
                                           _handleDownload(entry);
                                         },
-                                        onComplete: () {},
                                         onAdFailed: () {
                                           context.read<HomeBloc>().add(LoadedRewardAD());
                                           _handleDownload(entry);
@@ -561,16 +560,16 @@ class _HomeViewState extends State<HomeView> {
                     ),
 
                   /// TOP CATEGORY LIST (Sticky)
-                  if ((state.currentViewIndex + 1) % 3 != 0)
-                    HomeCategoryList(
-                      categories: state.categories,
-                      selectedCategory: state.selectedCategory,
-                      onCategorySelected: (categoryName) {
-                        int tapCount = AppPreferences().getInt(AppPreferences.categoryTap) ?? 0;
-                        tapCount++;
-                        AppPreferences().setInt(AppPreferences.categoryTap, tapCount);
+                  HomeCategoryList(
+                    categories: state.categories,
+                    selectedCategory: state.selectedCategory,
+                    onCategorySelected: (categoryName) {
+                      _lastAdShownIndex = -1;
+                      int tapCount = AppPreferences().getInt(AppPreferences.categoryTap) ?? 0;
+                      tapCount++;
+                      AppPreferences().setInt(AppPreferences.categoryTap, tapCount);
 
-                        context.read<HomeBloc>().add(ChangeCategory(categoryName));
+                      context.read<HomeBloc>().add(ChangeCategory(categoryName));
 
                         final showAd = tapCount % 3 == 0;
                         if (showAd) {

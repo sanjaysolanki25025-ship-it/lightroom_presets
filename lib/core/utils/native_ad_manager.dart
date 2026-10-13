@@ -41,33 +41,28 @@ class NativeAdManager {
     AppAdIdString.splashNativeAd: AdCacheConfig(
       adName: 'Splash Native Ad',
       cacheSize: 1,
-      factoryId: 'row_native_ad',
+      factoryId: 'medium_native_ad',
     ),
     AppAdIdString.onBoardingNativeAd1: AdCacheConfig(
       adName: 'OnBoarding Native Ad 1',
       cacheSize: 1,
-      factoryId: 'row_native_ad',
+      factoryId: 'medium_native_ad',
     ),
     AppAdIdString.onBoardingNativeAd2: AdCacheConfig(
       adName: 'OnBoarding Native Ad 2',
       cacheSize: 1,
-      factoryId: 'row_native_ad',
+      factoryId: 'medium_native_ad',
     ),
     AppAdIdString.onBoardingNativeAd3: AdCacheConfig(
       adName: 'OnBoarding Native Ad 3',
       cacheSize: 1,
-      factoryId: 'row_native_ad',
+      factoryId: 'medium_native_ad',
     ),
-    AppAdIdString.onBoardingFullScreenAd: AdCacheConfig(
-      adName: 'OnBoarding Full Screen Ad',
-      cacheSize: 1,
-      factoryId: 'full_screen_native_ad',
-    ),
-    AppAdIdString.homeReelsNativeAd: AdCacheConfig(
-      adName: 'Home Reels Native Ad',
-      cacheSize: 2,
-      factoryId: 'full_screen_native_ad',
-    ),
+    // AppAdIdString.homeReelsNativeAd: AdCacheConfig(
+    //   adName: 'Home Reels Native Ad',
+    //   cacheSize: 2,
+    //   factoryId: 'full_screen_native_ad',
+    // ),
     AppAdIdString.homeBottomNativeAd: AdCacheConfig(
       adName: 'Home Bottom Native Ad',
       cacheSize: 1,
@@ -173,8 +168,7 @@ class NativeAdManager {
       if (onboarding &&
           (adId == AppAdIdString.onBoardingNativeAd1 ||
               adId == AppAdIdString.onBoardingNativeAd2 ||
-              adId == AppAdIdString.onBoardingNativeAd3 ||
-              adId == AppAdIdString.onBoardingFullScreenAd)) {
+              adId == AppAdIdString.onBoardingNativeAd3)) {
         log('SKIP INITIAL PRE-CACHE | ${entry.value.adName} | $adId | Onboarding already completed.');
         continue;
       }
@@ -229,7 +223,6 @@ class NativeAdManager {
         (adId == AppAdIdString.onBoardingNativeAd1 ||
             adId == AppAdIdString.onBoardingNativeAd2 ||
             adId == AppAdIdString.onBoardingNativeAd3 ||
-            adId == AppAdIdString.onBoardingFullScreenAd ||
             adId == AppAdIdString.maintenanceNativeAd)) {
       log('SKIP PRE-CACHE | ${config.adName} | $adId | Onboarding already completed.');
       return;
@@ -408,8 +401,7 @@ class NativeAdManager {
     if (onboarding &&
         (adId == AppAdIdString.onBoardingNativeAd1 ||
             adId == AppAdIdString.onBoardingNativeAd2 ||
-            adId == AppAdIdString.onBoardingNativeAd3 ||
-            adId == AppAdIdString.onBoardingFullScreenAd)) {
+            adId == AppAdIdString.onBoardingNativeAd3)) {
       log('SKIP SERVE AD | ${config.adName} | $adId | Onboarding already completed.');
       return null;
     }

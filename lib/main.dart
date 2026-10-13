@@ -92,6 +92,7 @@ Future<void> _warmUpServicesAfterLaunch() async {
   // NativeAdManager().initFullAds();
   
   AdHelper.precacheAppOpenAd();
+  AdHelper.precacheHomeReelsInterstitialAd();
 }
 
 /// for dino game
