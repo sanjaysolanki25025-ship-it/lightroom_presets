@@ -72,7 +72,7 @@ class BannerAdManager {
     final AdSize adaptiveSize =
         await AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(screenWidth) ?? AdSize.banner;
 
-    BannerAd(
+    final bannerAd = BannerAd(
       adUnitId: adId,
       request: const AdRequest(),
       size: adaptiveSize,
@@ -89,16 +89,19 @@ class BannerAdManager {
           ad.dispose();
           _isLoading[adId] = false;
           _scheduleRetry(adId);
-          // Retry pre-caching after FailureModel
-          // Future.delayed(const Duration(seconds: 5), () {
-          //   if (_cachedAds[adId]?.isEmpty ?? true) {
-          //     log('BANNER RETRY PRE-CACHE | $adId | Retrying after FailureModel...');
-          //     preCacheAd(adId);
-          //   }
-          // });
         },
       ),
-    ).load();
+    );
+
+    try {
+      bannerAd.load().catchError((error) {
+        log('❌ BannerAd load error: $error');
+        _isLoading[adId] = false;
+      });
+    } catch (e) {
+      log('❌ BannerAd load sync error: $e');
+      _isLoading[adId] = false;
+    }
   }
 
   // -------------------------------------------------------

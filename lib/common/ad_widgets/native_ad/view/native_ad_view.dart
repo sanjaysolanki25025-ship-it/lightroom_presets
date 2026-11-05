@@ -97,7 +97,13 @@ class _NativeAdViewState extends State<NativeAdView> with AutomaticKeepAliveClie
         },
       ),
     );
-    _nativeAd!.load();
+    try {
+      _nativeAd!.load().catchError((e) {
+        log('❌ NativeAdView: load error: $e');
+      });
+    } catch (e) {
+      log('❌ NativeAdView: load sync error: $e');
+    }
   }
 
   @override

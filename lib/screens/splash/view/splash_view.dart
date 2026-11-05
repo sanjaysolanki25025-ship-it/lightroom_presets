@@ -50,11 +50,28 @@ class _SplashViewState extends State<SplashView> {
               return;
             }
             if (state.status == SplashStatus.loaded) {
+              bool navigated = false;
+              void navigateToNext() {
+                if (!navigated && context.mounted) {
+                  navigated = true;
+                  if (state.onboarding == true) {
+                    context.go(AppRoutesString.dashboardView);
+                  } else {
+                    context.go(AppRoutesString.onboardingView);
+                  }
+                }
+              }
+
+              // Fallback safety timeout: ensure app always navigates
+              Future.delayed(const Duration(seconds: 4), () {
+                navigateToNext();
+              });
+
               /// If onboarding already completed
               if (state.onboarding == true) {
                 AdHelper.showAppOpenAd(
                   onComplete: () {
-                    context.go(AppRoutesString.dashboardView);
+                    navigateToNext();
                   },
                 );
               } else {
@@ -62,7 +79,7 @@ class _SplashViewState extends State<SplashView> {
                 AdHelper.instantShowInterstitialAd(
                   adUnitId: AppAdIdString.splashInterstitialAd,
                   onAdClosed: () {
-                    context.go(AppRoutesString.onboardingView);
+                    navigateToNext();
                   },
                 );
               }

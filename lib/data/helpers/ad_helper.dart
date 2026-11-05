@@ -13,6 +13,44 @@ class AdHelper {
     return AppPreferences().getBool(AppPreferences.subscriptionPlan) ?? false;
   }
 
+  // =================== MOBILE ADS INITIALIZATION ===================
+  static bool _isMobileAdsInitialized = false;
+  static bool get isMobileAdsInitialized => _isMobileAdsInitialized;
+  static Completer<bool>? _initCompleter;
+
+  static Future<bool> initializeMobileAds() async {
+    if (_isMobileAdsInitialized) return true;
+    if (_initCompleter != null) return _initCompleter!.future;
+
+    _initCompleter = Completer<bool>();
+    try {
+      await MobileAds.instance.initialize().timeout(
+        const Duration(seconds: 4),
+        onTimeout: () {
+          log('⚠️ MobileAds.instance.initialize timed out after 4 seconds');
+          return InitializationStatus({});
+        },
+      );
+      _isMobileAdsInitialized = true;
+      log('✅ MobileAds SDK initialized successfully.');
+      _initCompleter!.complete(true);
+      return true;
+    } catch (e) {
+      log('❌ MobileAds SDK initialization failed: $e');
+      _initCompleter!.complete(false);
+      return false;
+    }
+  }
+
+  static Future<void> ensureMobileAdsInitialized() async {
+    if (!_isMobileAdsInitialized) {
+      await initializeMobileAds().timeout(
+        const Duration(seconds: 4),
+        onTimeout: () => false,
+      );
+    }
+  }
+
   static InterstitialAd? _interstitialAd;
   static bool _interstitialAdLoaded = false;
   static bool _isAdShowing = false;
@@ -60,26 +98,34 @@ class AdHelper {
       return;
     }
 
-    InterstitialAd.load(
-      adUnitId: adId,
-      request: const AdRequest(),
-      adLoadCallback: InterstitialAdLoadCallback(
-        onAdLoaded: (ad) {
-          _interstitialAd = ad;
-          _interstitialAdLoaded = true;
-          log('✅ Interstitial Ad Precached Successfully - AdId: $adId');
-        },
-        onAdFailedToLoad: (err) {
-          resetInterstitialAd();
+    try {
+      InterstitialAd.load(
+        adUnitId: adId,
+        request: const AdRequest(),
+        adLoadCallback: InterstitialAdLoadCallback(
+          onAdLoaded: (ad) {
+            _interstitialAd = ad;
+            _interstitialAdLoaded = true;
+            log('✅ Interstitial Ad Precached Successfully - AdId: $adId');
+          },
+          onAdFailedToLoad: (err) {
+            resetInterstitialAd();
 
-          log(
-            '❌ Interstitial Load Failed '
-                '| Code: ${err.code} '
-                '| Error: ${err.message}',
-          );
-        },
-      ),
-    );
+            log(
+              '❌ Interstitial Load Failed '
+                  '| Code: ${err.code} '
+                  '| Error: ${err.message}',
+            );
+          },
+        ),
+      ).catchError((err) {
+        resetInterstitialAd();
+        log('❌ Interstitial load error: $err');
+      });
+    } catch (err) {
+      resetInterstitialAd();
+      log('❌ Interstitial load sync error: $err');
+    }
   }
 
   static void showInterstitialAd({
@@ -158,7 +204,13 @@ class AdHelper {
       },
     );
 
-    _interstitialAd!.show();
+    try {
+      _interstitialAd!.show();
+    } catch (e) {
+      log('❌ Error showing interstitial: $e');
+      resetInterstitialAd();
+      onAdClosed?.call();
+    }
   }
 
   //*****************Home Reels Interstitial Ad******************
@@ -197,34 +249,42 @@ class AdHelper {
 
     _isHomeReelsAdLoading = true;
 
-    InterstitialAd.load(
-      adUnitId: targetAdId,
-      request: const AdRequest(),
-      adLoadCallback: InterstitialAdLoadCallback(
-        onAdLoaded: (ad) {
-          _homeReelsInterstitialAd = ad;
-          _homeReelsInterstitialAdLoaded = true;
-          _isHomeReelsAdLoading = false;
-          log('✅ Home Reels Interstitial Ad Precached Successfully - AdId: $targetAdId');
-        },
-        onAdFailedToLoad: (err) {
-          resetHomeReelsInterstitialAd();
+    try {
+      InterstitialAd.load(
+        adUnitId: targetAdId,
+        request: const AdRequest(),
+        adLoadCallback: InterstitialAdLoadCallback(
+          onAdLoaded: (ad) {
+            _homeReelsInterstitialAd = ad;
+            _homeReelsInterstitialAdLoaded = true;
+            _isHomeReelsAdLoading = false;
+            log('✅ Home Reels Interstitial Ad Precached Successfully - AdId: $targetAdId');
+          },
+          onAdFailedToLoad: (err) {
+            resetHomeReelsInterstitialAd();
 
-          log(
-            '❌ Home Reels Interstitial Load Failed '
-            '| Code: ${err.code} '
-            '| Error: ${err.message}',
-          );
+            log(
+              '❌ Home Reels Interstitial Load Failed '
+              '| Code: ${err.code} '
+              '| Error: ${err.message}',
+            );
 
-          // Retry pre-caching after 5 seconds if still needed
-          Future.delayed(const Duration(seconds: 5), () {
-            if (!_isUserSubscribed && !_homeReelsInterstitialAdLoaded && !_isHomeReelsAdLoading) {
-              precacheHomeReelsInterstitialAd(adId: targetAdId);
-            }
-          });
-        },
-      ),
-    );
+            // Retry pre-caching after 5 seconds if still needed
+            Future.delayed(const Duration(seconds: 5), () {
+              if (!_isUserSubscribed && !_homeReelsInterstitialAdLoaded && !_isHomeReelsAdLoading) {
+                precacheHomeReelsInterstitialAd(adId: targetAdId);
+              }
+            });
+          },
+        ),
+      ).catchError((err) {
+        resetHomeReelsInterstitialAd();
+        log('❌ Home Reels Interstitial Load error: $err');
+      });
+    } catch (err) {
+      resetHomeReelsInterstitialAd();
+      log('❌ Home Reels Interstitial Load sync error: $err');
+    }
   }
 
   static void showHomeReelsInterstitialAd({
@@ -295,7 +355,13 @@ class AdHelper {
       },
     );
 
-    _homeReelsInterstitialAd!.show();
+    try {
+      _homeReelsInterstitialAd!.show();
+    } catch (e) {
+      log('❌ Error showing Home Reels Interstitial: $e');
+      resetHomeReelsInterstitialAd();
+      onAdClosed?.call();
+    }
   }
 
   //*****************Interstitial Ad Without pre catch ******************
@@ -304,90 +370,130 @@ class AdHelper {
     VoidCallback? onAdClosed,
     VoidCallback? onAdShowed,
     VoidCallback? onAdFailed,
-  }) {
+  }) async {
     if (_isUserSubscribed) {
       onAdClosed?.call();
       return;
     }
 
+    await ensureMobileAdsInitialized();
+
     cancelLoadMoreAd = false;
     isLoadMoreAdLoadingOrShowing = true;
 
-    InterstitialAd.load(
-      adUnitId: adUnitId,
-      request: const AdRequest(),
-      adLoadCallback: InterstitialAdLoadCallback(
-        onAdLoaded: (ad) {
-          if (cancelLoadMoreAd) {
-            ad.dispose();
-            isLoadMoreAdLoadingOrShowing = false;
-            onAdClosed?.call();
-            return;
-          }
-          ad.fullScreenContentCallback = FullScreenContentCallback(
-            onAdShowedFullScreenContent: (ad) {
-              onAdShowed?.call();
-            },
-            onAdDismissedFullScreenContent: (ad) {
+    try {
+      InterstitialAd.load(
+        adUnitId: adUnitId,
+        request: const AdRequest(),
+        adLoadCallback: InterstitialAdLoadCallback(
+          onAdLoaded: (ad) {
+            if (cancelLoadMoreAd) {
               ad.dispose();
               isLoadMoreAdLoadingOrShowing = false;
               onAdClosed?.call();
-            },
-            onAdFailedToShowFullScreenContent: (ad, error) {
+              return;
+            }
+            ad.fullScreenContentCallback = FullScreenContentCallback(
+              onAdShowedFullScreenContent: (ad) {
+                onAdShowed?.call();
+              },
+              onAdDismissedFullScreenContent: (ad) {
+                ad.dispose();
+                isLoadMoreAdLoadingOrShowing = false;
+                onAdClosed?.call();
+              },
+              onAdFailedToShowFullScreenContent: (ad, error) {
+                ad.dispose();
+                isLoadMoreAdLoadingOrShowing = false;
+                onAdFailed?.call();
+                onAdClosed?.call();
+              },
+            );
+
+            try {
+              ad.show();
+            } catch (e) {
+              log('❌ Error showing instant interstitial: $e');
               ad.dispose();
               isLoadMoreAdLoadingOrShowing = false;
               onAdFailed?.call();
               onAdClosed?.call();
-            },
-          );
-
-          ad.show();
-        },
-        onAdFailedToLoad: (error) {
-          isLoadMoreAdLoadingOrShowing = false;
-          onAdFailed?.call();
-          onAdClosed?.call();
-        },
-      ),
-    );
+            }
+          },
+          onAdFailedToLoad: (error) {
+            log('❌ instantShowInterstitialAd failed to load: ${error.message}');
+            isLoadMoreAdLoadingOrShowing = false;
+            onAdFailed?.call();
+            onAdClosed?.call();
+          },
+        ),
+      ).catchError((error) {
+        log('❌ instantShowInterstitialAd load error: $error');
+        isLoadMoreAdLoadingOrShowing = false;
+        onAdFailed?.call();
+        onAdClosed?.call();
+      });
+    } catch (error) {
+      log('❌ instantShowInterstitialAd sync error: $error');
+      isLoadMoreAdLoadingOrShowing = false;
+      onAdFailed?.call();
+      onAdClosed?.call();
+    }
   }
 
   static void showLoadMoreInterstitialAd({
     required String adUnitId,
-  }) {
+  }) async {
     if (_isUserSubscribed) return;
+
+    await ensureMobileAdsInitialized();
 
     cancelLoadMoreAd = false;
     isLoadMoreAdLoadingOrShowing = true;
 
-    InterstitialAd.load(
-      adUnitId: adUnitId,
-      request: const AdRequest(),
-      adLoadCallback: InterstitialAdLoadCallback(
-        onAdLoaded: (ad) {
-          if (cancelLoadMoreAd) {
-            ad.dispose();
-            isLoadMoreAdLoadingOrShowing = false;
-            return;
-          }
-          ad.fullScreenContentCallback = FullScreenContentCallback(
-            onAdDismissedFullScreenContent: (ad) {
+    try {
+      InterstitialAd.load(
+        adUnitId: adUnitId,
+        request: const AdRequest(),
+        adLoadCallback: InterstitialAdLoadCallback(
+          onAdLoaded: (ad) {
+            if (cancelLoadMoreAd) {
               ad.dispose();
               isLoadMoreAdLoadingOrShowing = false;
-            },
-            onAdFailedToShowFullScreenContent: (ad, error) {
-              ad.dispose();
-              isLoadMoreAdLoadingOrShowing = false;
-            },
-          );
+              return;
+            }
+            ad.fullScreenContentCallback = FullScreenContentCallback(
+              onAdDismissedFullScreenContent: (ad) {
+                ad.dispose();
+                isLoadMoreAdLoadingOrShowing = false;
+              },
+              onAdFailedToShowFullScreenContent: (ad, error) {
+                ad.dispose();
+                isLoadMoreAdLoadingOrShowing = false;
+              },
+            );
 
-          ad.show();
-        },
-        onAdFailedToLoad: (error) {
-          isLoadMoreAdLoadingOrShowing = false;
-        },
-      ),
-    );
+            try {
+              ad.show();
+            } catch (e) {
+              log('❌ Error showing load more interstitial: $e');
+              ad.dispose();
+              isLoadMoreAdLoadingOrShowing = false;
+            }
+          },
+          onAdFailedToLoad: (error) {
+            log('❌ showLoadMoreInterstitialAd failed to load: ${error.message}');
+            isLoadMoreAdLoadingOrShowing = false;
+          },
+        ),
+      ).catchError((error) {
+        log('❌ showLoadMoreInterstitialAd load error: $error');
+        isLoadMoreAdLoadingOrShowing = false;
+      });
+    } catch (error) {
+      log('❌ showLoadMoreInterstitialAd sync error: $error');
+      isLoadMoreAdLoadingOrShowing = false;
+    }
   }
 
 
@@ -397,21 +503,29 @@ class AdHelper {
     if (_isUserSubscribed) return;
     if (_landscapeInterstitialAdLoaded || _isLandscapeAdShowing) return;
 
-    InterstitialAd.load(
-      adUnitId: adId,
-      request: const AdRequest(),
-      adLoadCallback: InterstitialAdLoadCallback(
-        onAdLoaded: (ad) {
-          _landscapeInterstitialAd = ad;
-          _landscapeInterstitialAdLoaded = true;
-          log('Landscape Interstitial ad precached');
-        },
-        onAdFailedToLoad: (err) {
-          resetLandscapeInterstitialAd();
-          log('Failed to load landscape interstitial: ${err.message}');
-        },
-      ),
-    );
+    try {
+      InterstitialAd.load(
+        adUnitId: adId,
+        request: const AdRequest(),
+        adLoadCallback: InterstitialAdLoadCallback(
+          onAdLoaded: (ad) {
+            _landscapeInterstitialAd = ad;
+            _landscapeInterstitialAdLoaded = true;
+            log('Landscape Interstitial ad precached');
+          },
+          onAdFailedToLoad: (err) {
+            resetLandscapeInterstitialAd();
+            log('Failed to load landscape interstitial: ${err.message}');
+          },
+        ),
+      ).catchError((err) {
+        resetLandscapeInterstitialAd();
+        log('Failed to load landscape interstitial: $err');
+      });
+    } catch (err) {
+      resetLandscapeInterstitialAd();
+      log('Failed to load landscape interstitial sync: $err');
+    }
   }
 
   static void showLandscapeInterstitialAd({VoidCallback? onAdClosed, required String adId}) {
@@ -452,7 +566,13 @@ class AdHelper {
       },
     );
 
-    _landscapeInterstitialAd!.show();
+    try {
+      _landscapeInterstitialAd!.show();
+    } catch (e) {
+      log('❌ Error showing landscape interstitial: $e');
+      resetLandscapeInterstitialAd();
+      onAdClosed?.call();
+    }
   }
 
   static void resetLandscapeInterstitialAd() {
@@ -476,24 +596,34 @@ class AdHelper {
 
     log('Loading Rewarded Ad...');
 
-    RewardedAd.load(
-      adUnitId: adUnitId,
-      request: const AdRequest(),
-      rewardedAdLoadCallback: RewardedAdLoadCallback(
-        onAdLoaded: (ad) {
-          log('Rewarded Ad Loaded');
+    try {
+      RewardedAd.load(
+        adUnitId: adUnitId,
+        request: const AdRequest(),
+        rewardedAdLoadCallback: RewardedAdLoadCallback(
+          onAdLoaded: (ad) {
+            log('Rewarded Ad Loaded');
 
-          _rewardedAd = ad;
-          _isLoading = false;
-        },
-        onAdFailedToLoad: (error) {
-          log('Rewarded Ad Failed: ${error.message}');
+            _rewardedAd = ad;
+            _isLoading = false;
+          },
+          onAdFailedToLoad: (error) {
+            log('Rewarded Ad Failed: ${error.message}');
 
-          _rewardedAd = null;
-          _isLoading = false;
-        },
-      ),
-    );
+            _rewardedAd = null;
+            _isLoading = false;
+          },
+        ),
+      ).catchError((err) {
+        log('Rewarded Ad load error: $err');
+        _rewardedAd = null;
+        _isLoading = false;
+      });
+    } catch (err) {
+      log('Rewarded Ad load sync error: $err');
+      _rewardedAd = null;
+      _isLoading = false;
+    }
   }
 
   // SHOW REWARDED AD
@@ -502,34 +632,51 @@ class AdHelper {
     required VoidCallback onRewardEarned,
     required VoidCallback onAdFailed,
     required VoidCallback onComplete,
-  }) {
-    RewardedAd.load(
-      adUnitId: adUnitId,
-      request: const AdRequest(),
-      rewardedAdLoadCallback: RewardedAdLoadCallback(
-        onAdLoaded: (ad) {
-          ad.fullScreenContentCallback = FullScreenContentCallback(
-            onAdDismissedFullScreenContent: (ad) {
-              ad.dispose();
-              onComplete();
-            },
-            onAdFailedToShowFullScreenContent: (ad, error) {
+  }) async {
+    await ensureMobileAdsInitialized();
+
+    try {
+      RewardedAd.load(
+        adUnitId: adUnitId,
+        request: const AdRequest(),
+        rewardedAdLoadCallback: RewardedAdLoadCallback(
+          onAdLoaded: (ad) {
+            ad.fullScreenContentCallback = FullScreenContentCallback(
+              onAdDismissedFullScreenContent: (ad) {
+                ad.dispose();
+                onComplete();
+              },
+              onAdFailedToShowFullScreenContent: (ad, error) {
+                ad.dispose();
+                onAdFailed();
+              },
+            );
+
+            try {
+              ad.show(
+                onUserEarnedReward: (ad, reward) {
+                  onRewardEarned();
+                },
+              );
+            } catch (e) {
+              log('❌ Error showing rewarded ad: $e');
               ad.dispose();
               onAdFailed();
-            },
-          );
-
-          ad.show(
-            onUserEarnedReward: (ad, reward) {
-              onRewardEarned();
-            },
-          );
-        },
-        onAdFailedToLoad: (error) {
-          onAdFailed();
-        },
-      ),
-    );
+            }
+          },
+          onAdFailedToLoad: (error) {
+            log('❌ Rewarded Ad Failed To Load: ${error.message}');
+            onAdFailed();
+          },
+        ),
+      ).catchError((err) {
+        log('❌ Rewarded Ad load error: $err');
+        onAdFailed();
+      });
+    } catch (err) {
+      log('❌ Rewarded Ad load sync error: $err');
+      onAdFailed();
+    }
   }
   // DISPOSE
   static void disposeRewardedAd() {
@@ -738,25 +885,33 @@ class AdHelper {
 
     log('🚀 Loading App Open Ad');
 
-    AppOpenAd.load(
-      adUnitId: AppAdIdString.appOpen,
-      request: const AdRequest(),
-      // orientation: AppOpenAd.orientationPortrait,
-      adLoadCallback: AppOpenAdLoadCallback(
-        onAdLoaded: (ad) {
-          log('✅ App Open Ad Loaded');
+    try {
+      AppOpenAd.load(
+        adUnitId: AppAdIdString.appOpen,
+        request: const AdRequest(),
+        // orientation: AppOpenAd.orientationPortrait,
+        adLoadCallback: AppOpenAdLoadCallback(
+          onAdLoaded: (ad) {
+            log('✅ App Open Ad Loaded');
 
-          _appOpenAd = ad;
+            _appOpenAd = ad;
 
-          _setFullScreenCallback();
-        },
-        onAdFailedToLoad: (error) {
-          log('❌ Failed To Load App Open Ad : $error');
+            _setFullScreenCallback();
+          },
+          onAdFailedToLoad: (error) {
+            log('❌ Failed To Load App Open Ad : $error');
 
-          _appOpenAd = null;
-        },
-      ),
-    );
+            _appOpenAd = null;
+          },
+        ),
+      ).catchError((e) {
+        log('❌ AppOpenAd.load error: $e');
+        _appOpenAd = null;
+      });
+    } catch (e) {
+      log('❌ AppOpenAd.load sync error: $e');
+      _appOpenAd = null;
+    }
   }
 
   // SHOW APP OPEN AD
@@ -782,7 +937,12 @@ class AdHelper {
 
     _isShowing = true;
 
-    await _appOpenAd?.show();
+    try {
+      await _appOpenAd?.show();
+    } catch (e) {
+      log('❌ Error showing App Open Ad: $e');
+      _disposeAd();
+    }
 
     onComplete();
   }

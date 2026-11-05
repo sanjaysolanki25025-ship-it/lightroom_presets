@@ -267,7 +267,7 @@ class NativeAdManager {
       // 📥 PRE CACHE START LOG
       log('PRE CACHE START | ${config.adName} | $adId | Ad ${i + 1}/$needToLoad');
 
-      NativeAd(
+      final nativeAd = NativeAd(
         adUnitId: adId,
         factoryId: config.factoryId,
         request: const AdRequest(),
@@ -338,7 +338,21 @@ class NativeAdManager {
             }
           },
         ),
-      ).load();
+      );
+
+      try {
+        nativeAd.load().catchError((error) {
+          log('❌ NativeAd load error: $error');
+          if (!completer.isCompleted) {
+            completer.complete();
+          }
+        });
+      } catch (e) {
+        log('❌ NativeAd load sync error: $e');
+        if (!completer.isCompleted) {
+          completer.complete();
+        }
+      }
 
       futures.add(completer.future);
     }

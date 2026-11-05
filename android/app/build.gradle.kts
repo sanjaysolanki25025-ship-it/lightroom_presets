@@ -95,6 +95,7 @@ android {
         targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        manifestPlaceholders["izooto_app_id"] = "89edf4067a4ef1194581ed66fee977ec6b848c28"
     }
 
     signingConfigs {
