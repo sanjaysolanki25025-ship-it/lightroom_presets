@@ -158,6 +158,7 @@ class NativeAdManager {
   Future<void> init() async {
     final onboarding = AppPreferences().getBool(AppPreferences.onboarding) ?? false;
     final isMaintenance = FirebaseRemoteConfig.instance.getBool("isMaintenance");
+    final isOnboardingAd = FirebaseRemoteConfig.instance.getBool("onboarding_ad");
     
     // Check if favourite data exists for noDataFoundNativeAd condition
     final favouriteData = await DbHelper().getFavourites();
@@ -165,11 +166,11 @@ class NativeAdManager {
     for (final entry in _configs.entries) {
       final adId = entry.key;
 
-      if (onboarding &&
+      if ((onboarding || !isOnboardingAd) &&
           (adId == AppAdIdString.onBoardingNativeAd1 ||
               adId == AppAdIdString.onBoardingNativeAd2 ||
               adId == AppAdIdString.onBoardingNativeAd3)) {
-        log('SKIP INITIAL PRE-CACHE | ${entry.value.adName} | $adId | Onboarding already completed.');
+        log('SKIP INITIAL PRE-CACHE | ${entry.value.adName} | $adId | Onboarding ad disabled or completed.');
         continue;
       }
 
@@ -219,11 +220,15 @@ class NativeAdManager {
     if (_isLoading[adId] == true) return;
 
     final onboarding = AppPreferences().getBool(AppPreferences.onboarding) ?? false;
-    if (onboarding &&
+    final isOnboardingAd = FirebaseRemoteConfig.instance.getBool("onboarding_ad");
+    if ((onboarding || !isOnboardingAd) &&
         (adId == AppAdIdString.onBoardingNativeAd1 ||
             adId == AppAdIdString.onBoardingNativeAd2 ||
-            adId == AppAdIdString.onBoardingNativeAd3 ||
-            adId == AppAdIdString.maintenanceNativeAd)) {
+            adId == AppAdIdString.onBoardingNativeAd3)) {
+      log('SKIP PRE-CACHE | ${config.adName} | $adId | Onboarding ad disabled or completed.');
+      return;
+    }
+    if (onboarding && adId == AppAdIdString.maintenanceNativeAd) {
       log('SKIP PRE-CACHE | ${config.adName} | $adId | Onboarding already completed.');
       return;
     }
@@ -412,11 +417,12 @@ class NativeAdManager {
     if (config == null) return null;
 
     final onboarding = AppPreferences().getBool(AppPreferences.onboarding) ?? false;
-    if (onboarding &&
+    final isOnboardingAd = FirebaseRemoteConfig.instance.getBool("onboarding_ad");
+    if ((onboarding || !isOnboardingAd) &&
         (adId == AppAdIdString.onBoardingNativeAd1 ||
             adId == AppAdIdString.onBoardingNativeAd2 ||
             adId == AppAdIdString.onBoardingNativeAd3)) {
-      log('SKIP SERVE AD | ${config.adName} | $adId | Onboarding already completed.');
+      log('SKIP SERVE AD | ${config.adName} | $adId | Onboarding ad disabled or completed.');
       return null;
     }
 
@@ -477,6 +483,15 @@ class NativeAdManager {
   void _scheduleRetry(String adId) {
     final config = _configs[adId];
     if (config == null) return;
+
+    final isOnboardingAd = FirebaseRemoteConfig.instance.getBool("onboarding_ad");
+    if (!isOnboardingAd &&
+        (adId == AppAdIdString.onBoardingNativeAd1 ||
+            adId == AppAdIdString.onBoardingNativeAd2 ||
+            adId == AppAdIdString.onBoardingNativeAd3)) {
+      log('SKIP RETRY PRE-CACHE | ${config.adName} | $adId | Onboarding ad disabled.');
+      return;
+    }
 
     _retryTimers[adId]?.cancel();
 

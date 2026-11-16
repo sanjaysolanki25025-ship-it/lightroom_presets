@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:developer';
+import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
@@ -84,6 +85,14 @@ class AdHelper {
       return;
     }
 
+    if ((adId == AppAdIdString.onboarding1InterstitialAd ||
+            adId == AppAdIdString.onbordingTwoInterstitialAd) &&
+        !FirebaseRemoteConfig.instance.getBool("onboarding_ad")) {
+      log('❌ Onboarding ads disabled via remote config, skipping precache & removing cache - AdId: $adId');
+      resetInterstitialAd();
+      return;
+    }
+
     log('🔄 Precache Interstitial Ad Started - AdId: $adId');
 
     if (_isUserSubscribed) {
@@ -139,6 +148,15 @@ class AdHelper {
         onAdClosed: onAdClosed,
         reloadAfterClose: reloadAfterClose,
       );
+      return;
+    }
+
+    if ((adId == AppAdIdString.onboarding1InterstitialAd ||
+            adId == AppAdIdString.onbordingTwoInterstitialAd) &&
+        !FirebaseRemoteConfig.instance.getBool("onboarding_ad")) {
+      log('❌ Onboarding ads disabled via remote config, skipping ad & removing cache - AdId: $adId');
+      resetInterstitialAd();
+      onAdClosed?.call();
       return;
     }
 

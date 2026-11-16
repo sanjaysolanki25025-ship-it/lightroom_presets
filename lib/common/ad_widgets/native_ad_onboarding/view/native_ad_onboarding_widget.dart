@@ -1,5 +1,6 @@
 import 'dart:developer';
 import 'dart:io';
+import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -16,8 +17,13 @@ import 'package:lightroom_template/core/utils/native_ad_manager.dart';
 
 class NativeAdOnboardingWidget extends StatefulWidget {
   final int index;
+  final String? adId;
 
-  const NativeAdOnboardingWidget({super.key, this.index = 0});
+  const NativeAdOnboardingWidget({
+    super.key,
+    this.index = 0,
+    this.adId,
+  });
 
   @override
   State<NativeAdOnboardingWidget> createState() => _NativeAdOnboardingWidgetState();
@@ -26,11 +32,7 @@ class NativeAdOnboardingWidget extends StatefulWidget {
 class _NativeAdOnboardingWidgetState extends State<NativeAdOnboardingWidget> {
   NativeAd? _nativeAd;
 
-  @override
-  void initState() {
-    super.initState();
-    _loadAd();
-  }
+  bool get _isOnboardingAdEnabled => FirebaseRemoteConfig.instance.getBool("onboarding_ad");
 
   static final List<String> onboardingNativeAds = [
     AppAdIdString.onBoardingNativeAd1,
@@ -38,10 +40,34 @@ class _NativeAdOnboardingWidgetState extends State<NativeAdOnboardingWidget> {
     AppAdIdString.onBoardingNativeAd3,
   ];
 
+  String get _currentAdId {
+    if (widget.adId != null && widget.adId!.isNotEmpty) {
+      return widget.adId!;
+    }
+    final adIndex = widget.index;
+    if (adIndex < onboardingNativeAds.length) {
+      return onboardingNativeAds[adIndex];
+    }
+    return AppAdIdString.onBoardingNativeAd1;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    if (_isOnboardingAdEnabled) {
+      _loadAd();
+    }
+  }
+
   @override
   void didUpdateWidget(covariant NativeAdOnboardingWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.index != oldWidget.index) {
+    if (!_isOnboardingAdEnabled) {
+      _nativeAd?.dispose();
+      _nativeAd = null;
+      return;
+    }
+    if (widget.index != oldWidget.index || widget.adId != oldWidget.adId) {
       _nativeAd?.dispose();
       _nativeAd = null;
       context.read<NativeAdOnboardingBloc>().add(ShowNativeAdOnboardingEvent(isShowNative: false));
@@ -50,15 +76,13 @@ class _NativeAdOnboardingWidgetState extends State<NativeAdOnboardingWidget> {
   }
 
   void _loadAd() {
-    final adIndex = widget.index;
-    if (adIndex >= onboardingNativeAds.length) return;
-
-    final adId = onboardingNativeAds[adIndex];
-    log('🔍 NativeAdOnboardingWidget [index: ${widget.index}, adIndex: $adIndex]: Requesting ad... (adId: $adId)');
+    if (!_isOnboardingAdEnabled) return;
+    final adId = _currentAdId;
+    log('🔍 NativeAdOnboardingWidget [index: ${widget.index}, adId: $adId]: Requesting ad...');
     _nativeAd = NativeAdManager().getMediumAd(adId);
 
     if (_nativeAd != null) {
-      log('✅ NativeAdOnboardingWidget [index: ${widget.index}]: Ad received from manager.');
+      log('✅ NativeAdOnboardingWidget [index: ${widget.index}, adId: $adId]: Ad received from manager.');
       // Use a small delay to ensure the widget is ready to render the pre-loaded ad
       Future.delayed(const Duration(milliseconds: 100), () {
         if (mounted) {
@@ -66,20 +90,20 @@ class _NativeAdOnboardingWidgetState extends State<NativeAdOnboardingWidget> {
         }
       });
     } else {
-      log('🔄 NativeAdOnboardingWidget [index: ${widget.index}]: No ad in manager. Loading manually...');
+      log('🔄 NativeAdOnboardingWidget [index: ${widget.index}, adId: $adId]: No ad in manager. Loading manually...');
       _nativeAd = NativeAd(
         adUnitId: adId,
         request: const AdRequest(),
         factoryId: 'medium_native_ad',
         listener: NativeAdListener(
           onAdLoaded: (ad) {
-            log('✅ NativeAdOnboardingWidget [index: ${widget.index}]: Manual ad loaded.');
+            log('✅ NativeAdOnboardingWidget [index: ${widget.index}, adId: $adId]: Manual ad loaded.');
             if (mounted) {
               context.read<NativeAdOnboardingBloc>().add(ShowNativeAdOnboardingEvent(isShowNative: true));
             }
           },
           onAdFailedToLoad: (ad, error) {
-            log('❌ NativeAdOnboardingWidget [index: ${widget.index}]: Manual ad failed: ${error.message}');
+            log('❌ NativeAdOnboardingWidget [index: ${widget.index}, adId: $adId]: Manual ad failed: ${error.message}');
             ad.dispose();
           },
         ),
@@ -89,6 +113,9 @@ class _NativeAdOnboardingWidgetState extends State<NativeAdOnboardingWidget> {
 
   @override
   Widget build(BuildContext context) {
+    if (!_isOnboardingAdEnabled) {
+      return const SizedBox.shrink();
+    }
     final double adHeight = Platform.isIOS ? 360 : 380;
     final double shimmerHeight = Platform.isIOS ? 340 : 380;
 

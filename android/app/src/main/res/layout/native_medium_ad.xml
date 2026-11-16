@@ -99,7 +99,7 @@
             android:layout_height="wrap_content"
             android:textSize="13sp"
             android:textColor="#999999"
-            android:maxLines="3"
+            android:maxLines="2"
             android:ellipsize="end"
             android:layout_marginTop="8dp"/>
 

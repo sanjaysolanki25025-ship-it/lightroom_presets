@@ -1,3 +1,4 @@
+import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -10,6 +11,7 @@ import 'package:lightroom_template/core/constant/app_image_string.dart';
 import 'package:lightroom_template/core/constant/app_lotties_string.dart';
 import 'package:lightroom_template/core/constant/app_string.dart';
 import 'package:lightroom_template/core/utils/app_text_style.dart';
+import 'package:lightroom_template/core/utils/native_ad_manager.dart' show NativeAdManager;
 import 'package:lightroom_template/data/helpers/ad_helper.dart';
 import 'package:lightroom_template/data/models/onboarding_model.dart';
 import 'package:lightroom_template/routes/app_route_string.dart';
@@ -26,6 +28,8 @@ class OnboardingView extends StatefulWidget {
 
 class _OnboardingViewState extends State<OnboardingView> {
   final PageController _pageController = PageController();
+
+  bool get _isOnboardingAdEnabled => FirebaseRemoteConfig.instance.getBool("onboarding_ad");
 
   final List<OnboardingModel> _onboardingData = [
     OnboardingModel(
@@ -59,26 +63,15 @@ class _OnboardingViewState extends State<OnboardingView> {
         body: BlocListener<OnboardingBloc, OnboardingState>(
           listener: (context, state) {
             if (state.status == OnboardingStatus.loaded) {
-              AdHelper.showAppOpenAd(
-                onComplete: () {
-                  context.go(AppRoutesString.dashboardView);
-                },
-              );
-              // bool adLoaded = AdHelper.isAppOpenAdLoaded;
-              // if (!adLoaded) {
-              //   CommonDialog.loaderDialog(context: context);
-              // }
-              //
-              // AdHelper.showAppOpenAd(
-              //   onComplete: () {
-              //     if (!adLoaded) {
-              //       Navigator.of(context, rootNavigator: true).pop();
-              //     }
-              //   },
-              //   onComplete: () {
-              //     context.go(AppRoutesString.dashboardView);
-              //   },
-              // );
+              if (_isOnboardingAdEnabled) {
+                AdHelper.showAppOpenAd(
+                  onComplete: () {
+                    context.go(AppRoutesString.dashboardView);
+                  },
+                );
+              } else {
+                context.go(AppRoutesString.dashboardView);
+              }
             }
           },
           child: BlocBuilder<OnboardingBloc, OnboardingState>(
@@ -120,11 +113,22 @@ class _OnboardingViewState extends State<OnboardingView> {
             },
           ),
         ),
-        bottomNavigationBar: BlocBuilder<OnboardingBloc, OnboardingState>(
-          builder: (context, state) {
-            return NativeAdOnboardingWidget(index: state.selectedIndex ?? 0);
-          },
-        ),
+        bottomNavigationBar: _isOnboardingAdEnabled
+            ? BlocBuilder<OnboardingBloc, OnboardingState>(
+                builder: (context, state) {
+                  final index = state.selectedIndex ?? 0;
+                  final adId = index == 0
+                      ? AppAdIdString.onBoardingNativeAd1
+                      : index == 1
+                          ? AppAdIdString.onBoardingNativeAd2
+                          : AppAdIdString.onBoardingNativeAd3;
+                  return NativeAdOnboardingWidget(
+                    index: index,
+                    adId: adId,
+                  );
+                },
+              )
+            : null,
       ),
     );
   }
@@ -209,22 +213,32 @@ class _OnboardingViewState extends State<OnboardingView> {
             if (currentIndex == 2) {
               context.read<OnboardingBloc>().add(SaveOnTapEvent());
             } else if (currentIndex == 0) {
-              AdHelper.showInterstitialAd(
-                adId: AppAdIdString.onboarding1InterstitialAd,
-                reloadAfterClose: false,
-                onAdClosed: () {
-                  AdHelper.precacheInterstitialAd(adId: AppAdIdString.onbordingTwoInterstitialAd);
-                  _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
-                },
-              );
+              if (_isOnboardingAdEnabled) {
+                AdHelper.showInterstitialAd(
+                  adId: AppAdIdString.onboarding1InterstitialAd,
+                  reloadAfterClose: false,
+                  onAdClosed: () {
+                    AdHelper.precacheInterstitialAd(adId: AppAdIdString.onbordingTwoInterstitialAd);
+                    _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+                  },
+                );
+              } else {
+                AdHelper.resetInterstitialAd();
+                _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+              }
             } else if (currentIndex == 1) {
-              AdHelper.showInterstitialAd(
-                adId: AppAdIdString.onbordingTwoInterstitialAd,
-                reloadAfterClose: false,
-                onAdClosed: () {
-                  _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
-                },
-              );
+              if (_isOnboardingAdEnabled) {
+                AdHelper.showInterstitialAd(
+                  adId: AppAdIdString.onbordingTwoInterstitialAd,
+                  reloadAfterClose: false,
+                  onAdClosed: () {
+                    _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+                  },
+                );
+              } else {
+                AdHelper.resetInterstitialAd();
+                _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+              }
             }
           },
           borderRadius: 100,
