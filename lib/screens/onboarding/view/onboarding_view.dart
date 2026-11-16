@@ -11,13 +11,14 @@ import 'package:lightroom_template/core/constant/app_image_string.dart';
 import 'package:lightroom_template/core/constant/app_lotties_string.dart';
 import 'package:lightroom_template/core/constant/app_string.dart';
 import 'package:lightroom_template/core/utils/app_text_style.dart';
-import 'package:lightroom_template/core/utils/native_ad_manager.dart' show NativeAdManager;
 import 'package:lightroom_template/data/helpers/ad_helper.dart';
 import 'package:lightroom_template/data/models/onboarding_model.dart';
 import 'package:lightroom_template/routes/app_route_string.dart';
 import 'package:lightroom_template/common/common_button.dart';
 import 'package:lightroom_template/screens/onboarding/bloc/onboarding_bloc.dart';
 import 'package:lightroom_template/core/constant/app_ad_id_string.dart';
+
+import '../../../core/utils/native_ad_manager.dart';
 
 class OnboardingView extends StatefulWidget {
   const OnboardingView({super.key});
