@@ -19,6 +19,8 @@ import 'package:lightroom_template/screens/other_apps_screen/view/other_apps_vie
 import 'package:lightroom_template/screens/splash/bloc/splash_bloc.dart';
 import 'package:lightroom_template/screens/splash/view/splash_view.dart';
 import 'package:lightroom_template/common/ad_widgets/native_ad_onboarding/bloc/native_ad_onboarding_bloc.dart';
+import 'package:lightroom_template/screens/language_selection/bloc/language_selection_bloc.dart';
+import 'package:lightroom_template/screens/language_selection/view/language_selection_view.dart';
 import 'package:lightroom_template/screens/template_detail/bloc/template_detail_bloc.dart';
 import 'package:lightroom_template/screens/template_detail/view/template_detail_view.dart';
 
@@ -49,6 +51,18 @@ class AppRoutes {
               BlocProvider<NativeAdOnboardingBloc>(create: (context) => NativeAdOnboardingBloc()),
             ],
             child: const OnboardingView(),
+          );
+        },
+      ),
+
+      /// language selection view
+      GoRoute(
+        path: AppRoutesString.languageSelectionView,
+        builder: (context, state) {
+          final isFromSettings = (state.extra as bool?) ?? false;
+          return BlocProvider(
+            create: (context) => LanguageSelectionBloc(),
+            child: LanguageSelectionView(isFromSettings: isFromSettings),
           );
         },
       ),

@@ -950,19 +950,45 @@ class AdHelper {
 
     /// prevent multiple show
     if (_isShowing) {
+      onComplete();
       return;
     }
 
     _isShowing = true;
+
+    _appOpenAd?.fullScreenContentCallback = FullScreenContentCallback(
+      onAdShowedFullScreenContent: (ad) {
+        log('✅ App Open Ad Showing');
+      },
+      onAdDismissedFullScreenContent: (ad) {
+        log('🗑️ App Open Ad Dismissed');
+
+        _disposeAd();
+
+        /// preload next ad
+        precacheAppOpenAd();
+
+        onComplete();
+      },
+      onAdFailedToShowFullScreenContent: (ad, error) {
+        log('❌ Failed To Show App Open Ad : $error');
+
+        _disposeAd();
+
+        /// preload next ad
+        precacheAppOpenAd();
+
+        onComplete();
+      },
+    );
 
     try {
       await _appOpenAd?.show();
     } catch (e) {
       log('❌ Error showing App Open Ad: $e');
       _disposeAd();
+      onComplete();
     }
-
-    onComplete();
   }
 
   // FULL SCREEN CALLBACK

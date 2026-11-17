@@ -2,13 +2,15 @@ name: lightroom_template
 description: "A new Flutter project."
 publish_to: 'none'
 
-version: 1.1.2+13
+version: 1.1.2+14
 
 environment:
   sdk: ^3.11.4
 
 dependencies:
   flutter:
+    sdk: flutter
+  flutter_localizations:
     sdk: flutter
 
   cupertino_icons: ^1.0.9
@@ -60,6 +62,7 @@ dependencies:
   gma_mediation_pangle: ^4.1.1 #for pangle mediation
   gma_mediation_meta: ^1.7.0 #for meta mediation
   gma_mediation_ironsource: ^2.5.1 #for ironsource mediation
+  flutter_localization: ^1.0.0
 
 dev_dependencies:
   flutter_test:
@@ -75,6 +78,7 @@ flutter:
     - assets/icons/
     - assets/images/
     - assets/lotties/
+    - assets/languages/
     - assets/game/audio/
     - assets/game/images/
     - assets/game/images/AngryPig/

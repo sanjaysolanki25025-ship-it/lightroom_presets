@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:clarity_flutter/clarity_flutter.dart' as clarity;
 import 'package:clarity_flutter/clarity_flutter.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localization/flutter_localization.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:hive/hive.dart';
 import 'package:izooto_plugin/iZooto_flutter.dart';
@@ -121,8 +122,26 @@ Future<void> main() async {
     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]),
     Firebase.initializeApp(),
     AppPreferences().initialize(),
+    FlutterLocalization.instance.ensureInitialized(),
     initHive(),
   ]);
+
+  FlutterLocalization.instance.init(
+    initLanguageCode: AppPreferences().getString(AppPreferences.selectedLanguage) ?? 'en',
+    source: LocalizationSource.jsonAsset,
+    jsonLocales: const [
+      JsonLocale('ar', 'assets/languages/ar.json'),
+      JsonLocale('de', 'assets/languages/de.json'),
+      JsonLocale('en', 'assets/languages/en.json'),
+      JsonLocale('es', 'assets/languages/es.json'),
+      JsonLocale('fr', 'assets/languages/fr.json'),
+      JsonLocale('hi', 'assets/languages/hi.json'),
+      JsonLocale('id', 'assets/languages/id.json'),
+      JsonLocale('ko', 'assets/languages/ko.json'),
+      JsonLocale('pt', 'assets/languages/pt.json'),
+      JsonLocale('tr', 'assets/languages/tr.json'),
+    ],
+  );
 
   // Register FCM background message handler early
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
@@ -170,7 +189,6 @@ Future<void> _initAppServices() async {
     NativeAdManager().init();
     BannerAdManager().init();
     AdHelper.precacheAppOpenAd();
-    AdHelper.precacheHomeReelsInterstitialAd();
   } catch (e) {
     debugPrint('Ad services init error: $e');
   }
@@ -208,45 +226,29 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ScreenUtilInit(
-      designSize: const Size(370, 710),
-      minTextAdapt: true,
-      splitScreenMode: true,
-      child: MaterialApp.router(
-        title: "Lightroom Presets - Lumio",
-        debugShowCheckedModeBanner: false,
-        routerConfig: AppRoutes.routes,
-        theme: ThemeData(
-          scaffoldBackgroundColor: AppColors.backgroundColor,
-          useMaterial3: true,
-          // appBarTheme: const AppBarTheme(systemOverlayStyle: SystemUiOverlayStyle.light),
-          // appBarTheme: const AppBarTheme(systemOverlayStyle: SystemUiOverlayStyle.dark),
-          // appBarTheme: const AppBarTheme(
-          //   systemOverlayStyle: SystemUiOverlayStyle(
-          //     statusBarColor: Colors.transparent,
-          //     statusBarIconBrightness: Brightness.light,
-          //     statusBarBrightness: Brightness.dark,
-          //   ),
-          // ),
-        ),
-        // builder: (context, child) {
-        //   return AnnotatedRegion<SystemUiOverlayStyle>(
-        //     value: const SystemUiOverlayStyle(
-        //       statusBarColor: Colors.black,
-        //       statusBarIconBrightness: Brightness.light, // Android: white icons
-        //       statusBarBrightness: Brightness.dark, // iOS: white icons
-        //     ),
-        //     child: child!,
-        //   );
-        // },
-        // builder: (context, child) {
-        //   // ✅ AnnotatedRegion here — closest to the actual UI
-        //   return SafeArea(
-        //     bottom: false,
-        //     child: child ?? const SizedBox(),
-        //   );
-        // },
-      ),
+    final localization = FlutterLocalization.instance;
+
+    return ListenableBuilder(
+      listenable: localization,
+      builder: (context, _) {
+        return ScreenUtilInit(
+          designSize: const Size(370, 710),
+          minTextAdapt: true,
+          splitScreenMode: true,
+          child: MaterialApp.router(
+            title: "Lightroom Presets - Lumio",
+            debugShowCheckedModeBanner: false,
+            routerConfig: AppRoutes.routes,
+            locale: localization.currentLocale,
+            supportedLocales: localization.supportedLocales,
+            localizationsDelegates: localization.localizationsDelegates,
+            theme: ThemeData(
+              scaffoldBackgroundColor: AppColors.backgroundColor,
+              useMaterial3: true,
+            ),
+          ),
+        );
+      },
     );
   }
 }

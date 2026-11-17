@@ -18,7 +18,6 @@ import 'package:lightroom_template/common/common_button.dart';
 import 'package:lightroom_template/screens/onboarding/bloc/onboarding_bloc.dart';
 import 'package:lightroom_template/core/constant/app_ad_id_string.dart';
 
-import '../../../core/utils/native_ad_manager.dart';
 
 class OnboardingView extends StatefulWidget {
   const OnboardingView({super.key});
@@ -53,7 +52,9 @@ class _OnboardingViewState extends State<OnboardingView> {
   @override
   void initState() {
     context.read<OnboardingBloc>().add(StartButtonDelayEvent());
-    AdHelper.precacheInterstitialAd(adId: AppAdIdString.onboarding1InterstitialAd);
+    if (_isOnboardingAdEnabled) {
+      AdHelper.precacheInterstitialAd(adId: AppAdIdString.onboarding1InterstitialAd);
+    }
     super.initState();
   }
 
@@ -65,13 +66,15 @@ class _OnboardingViewState extends State<OnboardingView> {
           listener: (context, state) {
             if (state.status == OnboardingStatus.loaded) {
               if (_isOnboardingAdEnabled) {
-                AdHelper.showAppOpenAd(
-                  onComplete: () {
-                    context.go(AppRoutesString.dashboardView);
+                AdHelper.showInterstitialAd(
+                  adId: AppAdIdString.onbordingTwoInterstitialAd,
+                  reloadAfterClose: false,
+                  onAdClosed: () {
+                    context.go(AppRoutesString.languageSelectionView);
                   },
                 );
               } else {
-                context.go(AppRoutesString.dashboardView);
+                context.go(AppRoutesString.languageSelectionView);
               }
             }
           },
@@ -229,17 +232,9 @@ class _OnboardingViewState extends State<OnboardingView> {
               }
             } else if (currentIndex == 1) {
               if (_isOnboardingAdEnabled) {
-                AdHelper.showInterstitialAd(
-                  adId: AppAdIdString.onbordingTwoInterstitialAd,
-                  reloadAfterClose: false,
-                  onAdClosed: () {
-                    _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
-                  },
-                );
-              } else {
-                AdHelper.resetInterstitialAd();
-                _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+                AdHelper.precacheInterstitialAd(adId: AppAdIdString.onbordingTwoInterstitialAd);
               }
+              _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
             }
           },
           borderRadius: 100,

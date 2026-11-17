@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:auto_size_text/auto_size_text.dart';
+import 'package:flutter_localization/flutter_localization.dart';
 
 class CommonTextWidget extends StatelessWidget {
   final String text;
@@ -29,8 +30,18 @@ class CommonTextWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    String displayText = text;
+    try {
+      final translated = text.getString(context);
+      if (translated.isNotEmpty && !translated.endsWith(' not found')) {
+        displayText = translated;
+      }
+    } catch (_) {
+      displayText = text;
+    }
+
     return AutoSizeText(
-      text,
+      displayText,
       style: (textStyle ?? const TextStyle()).copyWith(
         height: height,
         decoration: isStrikeThrough == true

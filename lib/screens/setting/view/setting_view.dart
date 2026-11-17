@@ -276,6 +276,16 @@ class _SettingViewState extends State<SettingView> {
                               ),
       
                         SettingsItemWidget(
+                          title: AppStrings.txtChangeLanguage,
+                          icon: Icons.language,
+                          onTap: () {
+                            context.push(AppRoutesString.languageSelectionView, extra: true);
+                          },
+                        ),
+
+                        SBH5(),
+
+                        SettingsItemWidget(
                           title: AppStrings.txtRateUs,
                           icon: Icons.star_border,
                           onTap: () {

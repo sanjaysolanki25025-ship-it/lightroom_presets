@@ -32,6 +32,7 @@ class AppPreferences {
   static const String planType = "plan_type";
   static const String categoryTap = "category_tap";
   static const String openAppCount = "open_app_count";
+  static const String selectedLanguage = "selected_language";
 
   // Initialize SharedPreferences
   Future<void> initialize() async {

@@ -48,6 +48,15 @@ class AppStrings {
 
   /// ----------------- Links & code & functionality string ---------------------
   static const String imageUrl = "https://lightroom-admin.lightroom-api.workers.dev/images/";
+
+  /// ----------------- Language Selection ---------------------
+  static const String txtSelectLanguage = "Select Language";
+  static const String txtLanguageSelection = "Language Selection";
+  static const String txtChooseYourPreferredLanguage = "Choose your preferred language";
+  static const String txtSearchLanguage = "Search language...";
+  static const String txtChangeLanguage = "Language";
+  static const String txtContinue = "Continue";
+  static const String txtConfirm = "Confirm";
   static const String dngUrl = "https://www.sajjadit.xyz/Lr_Presets_File_Data/lr_20_24/uploadedfile/";
   static const String clarityKey = "wj87iflooi";
   static const String applePurchaseKey = "";

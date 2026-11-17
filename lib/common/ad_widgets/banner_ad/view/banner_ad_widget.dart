@@ -74,7 +74,6 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
               ),
             );
           }
-          BannerAdManager().preCacheAd(widget.adId);
         },
         onAdFailedToLoad: (ad, error) {
           if (mounted) {

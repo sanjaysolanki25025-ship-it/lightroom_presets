@@ -3,7 +3,6 @@ import 'dart:developer';
 import 'dart:ui';
 
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-import 'package:lightroom_template/core/constant/app_ad_id_string.dart';
 import 'package:lightroom_template/data/helpers/preferences_helper.dart';
 
 class BannerAdManager {
@@ -12,14 +11,6 @@ class BannerAdManager {
   factory BannerAdManager() => _instance;
 
   BannerAdManager._internal();
-
-  static final List<String> _adIds = [
-    AppAdIdString.discoverBannerAd,
-    AppAdIdString.favouriteBannerAd,
-    AppAdIdString.presetDetailBannerAd,
-    AppAdIdString.settingBannerAd,
-    AppAdIdString.otherAppBannerAd,
-  ];
 
   final Map<String, List<_CachedAdInfo>> _cachedAds = {};
   final Map<String, bool> _isLoading = {};
@@ -30,20 +21,8 @@ class BannerAdManager {
   // INIT
   // -------------------------------------------------------
   void init() {
-    final isSubscribed = AppPreferences().getBool(AppPreferences.subscriptionPlan) ?? false;
-    if (isSubscribed) {
-      log('SKIP BANNER PRE-CACHE | User is subscribed.');
-      return;
-    }
-
-    for (final adId in _adIds) {
-      final cache = _cachedAds[adId] ?? [];
-      final loading = _isLoading[adId] ?? false;
-
-      if (cache.isEmpty && !loading) {
-        preCacheAd(adId);
-      }
-    }
+    // Banner ads are loaded on-demand by BannerAdWidget when screens are viewed.
+    // Avoid pre-caching all banners at launch to preserve high show rate (> 70%).
   }
 
   // -------------------------------------------------------

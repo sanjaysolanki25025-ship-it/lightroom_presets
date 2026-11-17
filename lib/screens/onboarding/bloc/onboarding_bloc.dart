@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:lightroom_template/data/helpers/preferences_helper.dart';
 
 part 'onboarding_event.dart';
 
@@ -14,7 +13,6 @@ class OnboardingBloc extends Bloc<OnboardingEvent, OnboardingState> {
     on<StartButtonDelayEvent>(_startButtonDelayEvent);
   }
 
-
   /// change index event handler
   Future<void> _nextButtonOnTapEvent(NextButtonOnTapEvent event, Emitter<OnboardingState> emit) async {
     emit(state.copyWith(showButtons: false, selectedIndex: event.index));
@@ -25,8 +23,6 @@ class OnboardingBloc extends Bloc<OnboardingEvent, OnboardingState> {
   /// save on tap event handler
   FutureOr<void> _saveOnTapEvent(SaveOnTapEvent event, Emitter<OnboardingState> emit) {
     emit(state.copyWith(status: OnboardingStatus.loading));
-    AppPreferences().setInt(AppPreferences.coin, 50);
-    AppPreferences().setBool(AppPreferences.onboarding, true);
     emit(state.copyWith(status: OnboardingStatus.loaded));
   }
 

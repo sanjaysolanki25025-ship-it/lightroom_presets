@@ -103,7 +103,7 @@ class NativeAdManager {
 
     AppAdIdString.settingNativeAd: AdCacheConfig(
       adName: 'Setting Native Ad',
-      cacheSize: 2,
+      cacheSize: 1,
       factoryId: 'medium_native_ad',
     ),
     AppAdIdString.settingBottomNativeAd: AdCacheConfig(
@@ -186,8 +186,14 @@ class NativeAdManager {
           adId == AppAdIdString.favouriteBottomNativeAd ||
           adId == AppAdIdString.settingBottomNativeAd ||
           adId == AppAdIdString.socialMediaNativeAd ||
-          adId == AppAdIdString.rateUsNativeAd) {
-        log('SKIP INITIAL PRE-CACHE | ${entry.value.adName} | $adId | Managed manually.');
+          adId == AppAdIdString.rateUsNativeAd ||
+          adId == AppAdIdString.favouriteNativeAd ||
+          adId == AppAdIdString.settingNativeAd ||
+          adId == AppAdIdString.exitAppNativeAd ||
+          adId == AppAdIdString.noDataFoundNativeAd ||
+          adId == AppAdIdString.discoverNativeAd ||
+          adId == AppAdIdString.splashNativeAd) {
+        log('SKIP INITIAL PRE-CACHE | ${entry.value.adName} | $adId | Managed on-demand.');
         continue;
       }
 
